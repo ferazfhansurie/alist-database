@@ -1,33 +1,69 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ChakraProvider, Box } from '@chakra-ui/react';
-import { motion, AnimatePresence } from "framer-motion";
 import Navigation from "./components/Navigation";
 import Dashboard from "./components/Dashboard";
 import SocialMediaKOL from "./components/SocialMediaKOL";
 import TwitterThreadKOL from "./components/TwitterThreadKOL";
 import BloggerKOL from "./components/BloggerKOL";
 import ProductionTalentKOL from "./components/ProductionTalentKOL";
-
-const MotionBox = motion(Box);
+import Login from "./components/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { DatabaseProvider } from "./contexts/DatabaseContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 function App() {
   return (
     <ChakraProvider>
-      <Router>
-        <Box bg="white" minH="100vh">
-          <Navigation />
-          <AnimatePresence mode="wait">
+      <AuthProvider>
+        <DatabaseProvider>
+          <Router>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/social-media" element={<SocialMediaKOL />} />
-              <Route path="/twitter-thread" element={<TwitterThreadKOL />} />
-              <Route path="/blogger" element={<BloggerKOL />} />
-              <Route path="/production-talent" element={<ProductionTalentKOL />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Box bg="white" minH="100vh">
+                    <Navigation />
+                    <Dashboard />
+                  </Box>
+                </ProtectedRoute>
+              } />
+              <Route path="/social-media" element={
+                <ProtectedRoute>
+                  <Box bg="white" minH="100vh">
+                    <Navigation />
+                    <SocialMediaKOL />
+                  </Box>
+                </ProtectedRoute>
+              } />
+              <Route path="/twitter-thread" element={
+                <ProtectedRoute>
+                  <Box bg="white" minH="100vh">
+                    <Navigation />
+                    <TwitterThreadKOL />
+                  </Box>
+                </ProtectedRoute>
+              } />
+              <Route path="/blogger" element={
+                <ProtectedRoute>
+                  <Box bg="white" minH="100vh">
+                    <Navigation />
+                    <BloggerKOL />
+                  </Box>
+                </ProtectedRoute>
+              } />
+              <Route path="/production-talent" element={
+                <ProtectedRoute>
+                  <Box bg="white" minH="100vh">
+                    <Navigation />
+                    <ProductionTalentKOL />
+                  </Box>
+                </ProtectedRoute>
+              } />
             </Routes>
-          </AnimatePresence>
-        </Box>
-      </Router>
+          </Router>
+        </DatabaseProvider>
+      </AuthProvider>
     </ChakraProvider>
   );
 }

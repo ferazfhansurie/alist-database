@@ -35,7 +35,8 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-  useColorModeValue
+  useColorModeValue,
+  SimpleGrid
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { 
@@ -51,14 +52,18 @@ import {
   Calendar,
   User,
   MapPin,
+  Target,
+  FileText,
   Phone
 } from 'lucide-react';
-import { sampleKOLData, KOL_TYPES, TIERS, NICHES, STATES } from '../data/models';
+import { KOL_TYPES, TIERS, NICHES, STATES } from '../data/models';
 import KOLForm from './KOLForm';
+import { useDatabase } from '../contexts/DatabaseContext';
 
 const MotionBox = motion(Box);
 
 const SocialMediaKOL = () => {
+  const { loadKOLsByType, createKOL, updateKOL, deleteKOL } = useDatabase();
   const [kolData, setKolData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,8 +74,7 @@ const SocialMediaKOL = () => {
   const [viewingKOL, setViewingKOL] = useState(null);
   
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
-  const { isOpen: isViewOpen, onViewOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
-  
+  const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
   const toast = useToast();
 
   // Glassmorphism colors
@@ -85,11 +89,26 @@ const SocialMediaKOL = () => {
   const PICS = ['Amir', 'Tika', 'Aina'];
 
   useEffect(() => {
-    // Filter data based on KOL type
-    const socialMediaKOLs = sampleKOLData.filter(kol => kol.kolType === KOL_TYPES.SOCIAL_MEDIA);
-    setKolData(socialMediaKOLs);
-    setFilteredData(socialMediaKOLs);
-  }, []);
+    // Load social media KOLs from database
+    const loadSocialMediaKOLs = async () => {
+      try {
+        const socialMediaKOLs = await loadKOLsByType(KOL_TYPES.SOCIAL_MEDIA);
+        setKolData(socialMediaKOLs);
+        setFilteredData(socialMediaKOLs);
+      } catch (error) {
+        console.error('Error loading social media KOLs:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load social media KOLs',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    };
+    
+    loadSocialMediaKOLs();
+  }, [loadKOLsByType, toast]);
 
   useEffect(() => {
     filterData();
@@ -125,10 +144,7 @@ const SocialMediaKOL = () => {
     try {
       if (editingKOL) {
         // Update existing KOL
-        const updatedData = kolData.map(kol => 
-          kol.id === editingKOL.id ? { ...kolData, id: kol.id } : kol
-        );
-        setKolData(updatedData);
+        await updateKOL(editingKOL.id, kolData);
         toast({
           title: 'Updated!',
           description: 'KOL record updated successfully',
@@ -138,8 +154,7 @@ const SocialMediaKOL = () => {
         });
       } else {
         // Add new KOL
-        const newKOL = { ...kolData, id: Date.now().toString() };
-        setKolData(prev => [...prev, newKOL]);
+        await createKOL(kolData);
         toast({
           title: 'Added!',
           description: 'New KOL record added successfully',
@@ -148,6 +163,11 @@ const SocialMediaKOL = () => {
           isClosable: true,
         });
       }
+      
+      // Reload data from database
+      const socialMediaKOLs = await loadKOLsByType(KOL_TYPES.SOCIAL_MEDIA);
+      setKolData(socialMediaKOLs);
+      setFilteredData(socialMediaKOLs);
       
       setEditingKOL(null);
       onFormClose();
@@ -168,20 +188,37 @@ const SocialMediaKOL = () => {
   };
 
   const handleView = (kol) => {
+    console.log('Viewing KOL:', kol); // Debug log
     setViewingKOL(kol);
     onViewOpen();
   };
 
-  const handleDelete = (kolId) => {
+  const handleDelete = async (kolId) => {
     if (window.confirm('Are you sure you want to delete this KOL record?')) {
-      setKolData(prev => prev.filter(kol => kol.id !== kolId));
-      toast({
-        title: 'Deleted!',
-        description: 'KOL record deleted successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      try {
+        await deleteKOL(kolId);
+        
+        // Reload data from database
+        const socialMediaKOLs = await loadKOLsByType(KOL_TYPES.SOCIAL_MEDIA);
+        setKolData(socialMediaKOLs);
+        setFilteredData(socialMediaKOLs);
+        
+        toast({
+          title: 'Deleted!',
+          description: 'KOL record deleted successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error!',
+          description: 'Failed to delete KOL record',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
     }
   };
 
@@ -917,106 +954,367 @@ const SocialMediaKOL = () => {
           </ModalContent>
         </Modal>
 
-        {/* View KOL Modal */}
+
+                 {/* View KOL Modal */}
         <Modal isOpen={isViewOpen} onClose={onViewClose} size="2xl">
-          <ModalOverlay backdropFilter="blur(10px)" />
+          <ModalOverlay backdropFilter="blur(25px)" bg="rgba(0, 0, 0, 0.3)" />
           <ModalContent 
-            bg={glassBg}
-            backdropFilter="blur(20px)"
+            bg="rgba(255, 255, 255, 0.1)"
+            backdropFilter="blur(40px)"
             border="1px solid"
-            borderColor={glassBorder}
+            borderColor="rgba(255, 255, 255, 0.2)"
             borderRadius="2xl"
-            boxShadow={glassShadow}
+            boxShadow="0 20px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)"
+            overflow="hidden"
+            position="relative"
+            _before={{
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              background: 'linear-gradient(90deg, #dc2626, #ef4444, #f87171)',
+              opacity: 0.8
+            }}
           >
-            <ModalHeader color="red.600" fontWeight="700">KOL Details</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody pb={6}>
+            <ModalHeader 
+              bg="rgba(220, 38, 38, 0.1)"
+              backdropFilter="blur(20px)"
+              color="red.700"
+              fontWeight="700"
+              fontSize="xl"
+              textAlign="center"
+              py={4}
+              borderBottom="1px solid"
+              borderColor="rgba(255, 255, 255, 0.1)"
+            >
+              <Flex align="center" justify="center" gap={2}>
+                <Box
+                  w="32px"
+                  h="32px"
+                  borderRadius="full"
+                  bg="rgba(220, 38, 38, 0.2)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <User size={18} color="#dc2626" />
+                </Box>
+                {viewingKOL?.name}
+              </Flex>
+            </ModalHeader>
+            <ModalCloseButton 
+              color="red.600" 
+              bg="rgba(255, 255, 255, 0.2)"
+              borderRadius="full"
+              size="sm"
+              _hover={{ bg: 'rgba(255, 255, 255, 0.3)' }}
+              top={3}
+              right={3}
+            />
+            <ModalBody p={6}>
               {viewingKOL && (
                 <VStack spacing={4} align="stretch">
-                  <Box 
-                    bg="rgba(255, 255, 255, 0.6)"
-                    backdropFilter="blur(10px)"
-                    p={4}
-                    borderRadius="xl"
-                    border="1px solid"
-                    borderColor="rgba(255, 255, 255, 0.2)"
-                  >
-                    <Text fontWeight="700" color="gray.700" mb={2}>Name:</Text>
-                    <Text fontWeight="600">{viewingKOL.name}</Text>
-                  </Box>
-                  <Box 
-                    bg="rgba(255, 255, 255, 0.6)"
-                    backdropFilter="blur(10px)"
-                    p={4}
-                    borderRadius="xl"
-                    border="1px solid"
-                    borderColor="rgba(255, 255, 255, 0.2)"
-                  >
-                    <Text fontWeight="700" color="gray.700" mb={2}>Contact:</Text>
-                    <Text fontWeight="600">{viewingKOL.contactNumber}</Text>
-                  </Box>
-                  <Box 
-                    bg="rgba(255, 255, 255, 0.6)"
-                    backdropFilter="blur(10px)"
-                    p={4}
-                    borderRadius="xl"
-                    border="1px solid"
-                    borderColor="rgba(255, 255, 255, 0.2)"
-                  >
-                    <Text fontWeight="700" color="gray.700" mb={2}>Rate:</Text>
-                    <Text color="red.600" fontWeight="800">RM {viewingKOL.rate.toLocaleString()}</Text>
-                  </Box>
-                  <Box 
-                    bg="rgba(255, 255, 255, 0.6)"
-                    backdropFilter="blur(10px)"
-                    p={4}
-                    borderRadius="xl"
-                    border="1px solid"
-                    borderColor="rgba(255, 255, 255, 0.2)"
-                  >
-                    <Text fontWeight="700" color="gray.700" mb={2}>Tier:</Text>
-                    <Badge 
-                      colorScheme={getTierColor(viewingKOL.tier)}
-                      borderRadius="full"
-                      fontWeight="600"
+                  {/* Quick Stats Row */}
+                  <SimpleGrid columns={3} spacing={3}>
+                    <Box 
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      p={3}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                      textAlign="center"
+                      _hover={{ transform: 'translateY(-2px)', bg: 'rgba(255, 255, 255, 0.15)' }}
+                      transition="all 0.2s ease"
                     >
-                      {viewingKOL.tier}
-                    </Badge>
-                  </Box>
+                      <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>RATE</Text>
+                      <Text fontSize="lg" fontWeight="800" color="red.600">
+                        RM {viewingKOL.rate?.toLocaleString() || '0'}
+                      </Text>
+                    </Box>
+                    
+                    <Box 
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      p={3}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                      textAlign="center"
+                      _hover={{ transform: 'translateY(-2px)', bg: 'rgba(255, 255, 255, 0.15)' }}
+                      transition="all 0.2s ease"
+                    >
+                      <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>TIER</Text>
+                      <Badge 
+                        colorScheme={getTierColor(viewingKOL.tier)}
+                        variant="solid"
+                        borderRadius="full"
+                        px={2}
+                        py={1}
+                        fontSize="xs"
+                        fontWeight="700"
+                      >
+                        {viewingKOL.tier}
+                      </Badge>
+                    </Box>
+                    
+                    <Box 
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      p={3}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                      textAlign="center"
+                      _hover={{ transform: 'translateY(-2px)', bg: 'rgba(255, 255, 255, 0.15)' }}
+                      transition="all 0.2s ease"
+                    >
+                      <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>TYPE</Text>
+                      <Text fontSize="xs" fontWeight="700" color="red.600" textTransform="uppercase">
+                        {viewingKOL.kolType}
+                      </Text>
+                    </Box>
+                  </SimpleGrid>
+
+                  {/* Contact & Location */}
+                  <SimpleGrid columns={2} spacing={3}>
+                    <Box 
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      p={3}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                      _hover={{ transform: 'translateY(-2px)', bg: 'rgba(255, 255, 255, 0.15)' }}
+                      transition="all 0.2s ease"
+                    >
+                      <Flex align="center" gap={2} mb={2}>
+                        <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
+                          <Phone size={14} color="#dc2626" />
+                        </Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600">Contact</Text>
+                      </Flex>
+                      <Text fontSize="sm" fontWeight="600" color="gray.800">
+                        {viewingKOL.contactNumber || 'Not provided'}
+                      </Text>
+                    </Box>
+
+                    <Box 
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      p={3}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                      _hover={{ transform: 'translateY(-2px)', bg: 'rgba(255, 255, 255, 0.15)' }}
+                      transition="all 0.2s ease"
+                    >
+                      <Flex align="center" gap={2} mb={2}>
+                        <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
+                          <MapPin size={14} color="#dc2626" />
+                        </Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600">Location</Text>
+                      </Flex>
+                      <Text fontSize="sm" fontWeight="600" color="gray.800">
+                        {viewingKOL.address || 'Not specified'}
+                      </Text>
+                    </Box>
+                  </SimpleGrid>
+
+                  {/* Niches */}
                   <Box 
-                    bg="rgba(255, 255, 255, 0.6)"
-                    backdropFilter="blur(10px)"
+                    bg="rgba(255, 255, 255, 0.1)"
+                    backdropFilter="blur(20px)"
                     p={4}
                     borderRadius="xl"
                     border="1px solid"
-                    borderColor="rgba(255, 255, 255, 0.2)"
+                    borderColor="rgba(255, 255, 255, 0.1)"
                   >
-                    <Text fontWeight="700" color="gray.700" mb={2}>Niches:</Text>
+                    <Flex align="center" gap={2} mb={3}>
+                      <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
+                        <Target size={14} color="#dc2626" />
+                      </Box>
+                      <Text fontSize="sm" fontWeight="600" color="gray.700">Niches</Text>
+                    </Flex>
                     <HStack spacing={2} flexWrap="wrap">
-                      {viewingKOL.niches.map(niche => (
-                        <Badge 
-                          key={niche} 
-                          colorScheme="red" 
-                          variant="outline"
-                          borderRadius="full"
-                          fontWeight="600"
-                        >
-                          {niche}
-                        </Badge>
-                      ))}
+                      {viewingKOL.niches && viewingKOL.niches.length > 0 ? (
+                        viewingKOL.niches.map(niche => (
+                          <Badge 
+                            key={niche} 
+                            colorScheme="red" 
+                            variant="outline"
+                            borderRadius="full"
+                            px={2}
+                            py={1}
+                            fontWeight="500"
+                            fontSize="xs"
+                            borderWidth="1px"
+                            _hover={{ bg: 'red.500', color: 'white' }}
+                            transition="all 0.2s ease"
+                          >
+                            {niche}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Text color="gray.500" fontStyle="italic" fontSize="sm">
+                          No niches specified
+                        </Text>
+                      )}
                     </HStack>
                   </Box>
+
+                  {/* Additional Info Grid */}
                   <Box 
-                    bg="rgba(255, 255, 255, 0.6)"
-                    backdropFilter="blur(10px)"
+                    bg="rgba(255, 255, 255, 0.1)"
+                    backdropFilter="blur(20px)"
                     p={4}
                     borderRadius="xl"
                     border="1px solid"
-                    borderColor="rgba(255, 255, 255, 0.2)"
+                    borderColor="rgba(255, 255, 255, 0.1)"
                   >
-                    <Text fontWeight="700" color="gray.700" mb={2}>Notes:</Text>
-                    <Text fontWeight="500">{viewingKOL.notes || 'No additional notes'}</Text>
+                    <Flex align="center" gap={2} mb={3}>
+                      <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
+                        <FileText size={14} color="#dc2626" />
+                      </Box>
+                      <Text fontSize="sm" fontWeight="600" color="gray.700">Details</Text>
+                    </Flex>
+                    <SimpleGrid columns={2} spacing={3}>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Gender</Text>
+                        <Text fontSize="sm" fontWeight="600" color="gray.800">
+                          {viewingKOL.gender || 'N/A'}
+                        </Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Hair</Text>
+                        <Text fontSize="sm" fontWeight="600" color="gray.800">
+                          {viewingKOL.hairStyle || 'N/A'}
+                        </Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Race</Text>
+                        <Text fontSize="sm" fontWeight="600" color="gray.800">
+                          {viewingKOL.race || 'N/A'}
+                        </Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>PIC</Text>
+                        <Text fontSize="sm" fontWeight="600" color="gray.800">
+                          {viewingKOL.pic || 'N/A'}
+                        </Text>
+                      </Box>
+                    </SimpleGrid>
+                    
+                    {viewingKOL.notes && (
+                      <Box mt={3} p={3} bg="rgba(0, 0, 0, 0.05)" borderRadius="lg">
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Notes</Text>
+                        <Text fontSize="sm" color="gray.700" fontStyle="italic">
+                          {viewingKOL.notes}
+                        </Text>
+                      </Box>
+                    )}
                   </Box>
+
+                  {/* Social Media Links */}
+                  {(viewingKOL.instagram || viewingKOL.tiktok || viewingKOL.facebook || viewingKOL.twitter || viewingKOL.thread || viewingKOL.blog) && (
+                    <Box 
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      p={4}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                    >
+                      <Flex align="center" gap={2} mb={3}>
+                        <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
+                          <Instagram size={14} color="#dc2626" />
+                        </Box>
+                        <Text fontSize="sm" fontWeight="600" color="gray.700">Social Media</Text>
+                      </Flex>
+                      <SimpleGrid columns={3} spacing={2}>
+                        {viewingKOL.instagram && (
+                          <Button
+                            leftIcon={<Instagram size={12} />}
+                            colorScheme="pink"
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => openLink(viewingKOL.instagram)}
+                            _hover={{ bg: 'rgba(236, 72, 153, 0.1)' }}
+                            transition="all 0.2s ease"
+                          >
+                            IG
+                          </Button>
+                        )}
+                        {viewingKOL.tiktok && (
+                          <Button
+                            leftIcon={<span>🎵</span>}
+                            colorScheme="blackAlpha"
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => openLink(viewingKOL.tiktok)}
+                            _hover={{ bg: 'rgba(0, 0, 0, 0.1)' }}
+                            transition="all 0.2s ease"
+                          >
+                            TT
+                          </Button>
+                        )}
+                        {viewingKOL.facebook && (
+                          <Button
+                            leftIcon={<Facebook size={12} />}
+                            colorScheme="blue"
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => openLink(viewingKOL.facebook)}
+                            _hover={{ bg: 'rgba(59, 130, 246, 0.1)' }}
+                            transition="all 0.2s ease"
+                          >
+                            FB
+                          </Button>
+                        )}
+                        {viewingKOL.twitter && (
+                          <Button
+                            leftIcon={<Twitter size={12} />}
+                            colorScheme="blue"
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => openLink(viewingKOL.twitter)}
+                            _hover={{ bg: 'rgba(59, 130, 246, 0.1)' }}
+                            transition="all 0.2s ease"
+                          >
+                            TW
+                          </Button>
+                        )}
+                        {viewingKOL.thread && (
+                          <Button
+                            leftIcon={<span>🧵</span>}
+                            colorScheme="blackAlpha"
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => openLink(viewingKOL.thread)}
+                            _hover={{ bg: 'rgba(0, 0, 0, 0.1)' }}
+                            transition="all 0.2s ease"
+                          >
+                            TH
+                          </Button>
+                        )}
+                        {viewingKOL.blog && (
+                          <Button
+                            leftIcon={<FileText size={12} />}
+                            colorScheme="orange"
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => openLink(viewingKOL.blog)}
+                            _hover={{ bg: 'rgba(249, 115, 22, 0.1)' }}
+                            transition="all 0.2s ease"
+                          >
+                            Blog
+                          </Button>
+                        )}
+                      </SimpleGrid>
+                    </Box>
+                  )}
                 </VStack>
               )}
             </ModalBody>

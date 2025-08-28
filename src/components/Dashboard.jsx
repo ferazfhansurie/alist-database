@@ -37,51 +37,52 @@ import {
   Building,
   BarChart3
 } from 'lucide-react';
-import { sampleKOLData, KOL_TYPES } from '../data/models';
+import { KOL_TYPES } from '../data/models';
+import { useDatabase } from '../contexts/DatabaseContext';
 
 const MotionBox = motion(Box);
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    total: 0,
-    socialMedia: 0,
-    twitterThread: 0,
-    blogger: 0,
-    productionTalent: 0,
-    totalValue: 0,
-    averageRate: 0
-  });
+  const { kols, stats, loading, error } = useDatabase();
 
   // Glassmorphism colors
   const glassBg = useColorModeValue('rgba(255, 255, 255, 0.25)', 'rgba(26, 32, 44, 0.25)');
   const glassBorder = useColorModeValue('rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.18)');
   const glassShadow = useColorModeValue('0 8px 32px 0 rgba(31, 38, 135, 0.37)', '0 8px 32px 0 rgba(0, 0, 0, 0.37)');
 
-  useEffect(() => {
-    const calculateStats = () => {
-      const total = sampleKOLData.length;
-      const socialMedia = sampleKOLData.filter(kol => kol.kolType === KOL_TYPES.SOCIAL_MEDIA).length;
-      const twitterThread = sampleKOLData.filter(kol => kol.kolType === KOL_TYPES.TWITTER_THREAD).length;
-      const blogger = sampleKOLData.filter(kol => kol.kolType === KOL_TYPES.BLOGGER).length;
-      const productionTalent = sampleKOLData.filter(kol => kol.kolType === KOL_TYPES.PRODUCTION_TALENT).length;
-      
-      const totalValue = sampleKOLData.reduce((sum, kol) => sum + kol.rate, 0);
-      const averageRate = total > 0 ? Math.round(totalValue / total) : 0;
+  // Show loading state
+  if (loading) {
+    return (
+      <Box
+        minH="100vh"
+        bgGradient="linear(to-br, gray.50, red.50, white)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Text fontSize="xl" color="gray.600">Loading database...</Text>
+      </Box>
+    );
+  }
 
-      setStats({
-        total,
-        socialMedia,
-        twitterThread,
-        blogger,
-        productionTalent,
-        totalValue,
-        averageRate
-      });
-    };
-
-    calculateStats();
-  }, []);
+  // Show error state
+  if (error) {
+    return (
+      <Box
+        minH="100vh"
+        bgGradient="linear(to-br, gray.50, red.50, white)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <VStack spacing={4}>
+          <Text fontSize="xl" color="red.600">Database Error</Text>
+          <Text color="gray.600">{error}</Text>
+        </VStack>
+      </Box>
+    );
+  }
 
   const statCards = [
     {
@@ -146,7 +147,7 @@ const Dashboard = () => {
     }
   ];
 
-  const recentKOLs = sampleKOLData.slice(0, 4);
+  const recentKOLs = kols.slice(0, 4);
 
   const quickActions = [
     {

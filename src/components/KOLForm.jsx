@@ -26,7 +26,6 @@ import {
 import { motion } from 'framer-motion';
 import { Plus, X, Save, User, Link, DollarSign, Users, MapPin, Phone, Calendar, FileText, UserCheck } from 'lucide-react';
 import { 
-  KOLRecord, 
   TIERS, 
   GENDERS, 
   NICHES, 
@@ -46,7 +45,27 @@ const KOLForm = ({
   onCancel,
   title = "Add New KOL"
 }) => {
-  const [formData, setFormData] = useState(new KOLRecord({ kolType }));
+  const [formData, setFormData] = useState({
+    name: '',
+    instagram: '',
+    tiktok: '',
+    facebook: '',
+    twitter: '',
+    thread: '',
+    blog: '',
+    rate: 0,
+    tier: TIERS[0],
+    gender: GENDERS[0],
+    niches: [],
+    hairStyle: HAIR_STYLES[0],
+    race: RACES[0],
+    address: STATES[0],
+    contactNumber: '',
+    rateDetails: '',
+    pic: PICS[0],
+    kolType: kolType,
+    notes: ''
+  });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
@@ -58,7 +77,7 @@ const KOLForm = ({
 
   useEffect(() => {
     if (initialData) {
-      setFormData(new KOLRecord(initialData));
+      setFormData(initialData);
     }
   }, [initialData]);
 
@@ -142,7 +161,27 @@ const KOLForm = ({
       
       // Reset form if not editing
       if (!initialData) {
-        setFormData(new KOLRecord({ kolType }));
+        setFormData({
+          name: '',
+          instagram: '',
+          tiktok: '',
+          facebook: '',
+          twitter: '',
+          thread: '',
+          blog: '',
+          rate: 0,
+          tier: TIERS[0],
+          gender: GENDERS[0],
+          niches: [],
+          hairStyle: HAIR_STYLES[0],
+          race: RACES[0],
+          address: STATES[0],
+          contactNumber: '',
+          rateDetails: '',
+          pic: PICS[0],
+          kolType: kolType,
+          notes: ''
+        });
       }
     } catch (error) {
       toast({

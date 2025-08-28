@@ -19,7 +19,13 @@ import {
   ModalBody,
   useToast,
   SimpleGrid,
-  Heading
+  Heading,
+  Avatar,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { 
@@ -28,11 +34,15 @@ import {
   Twitter, 
   FileText, 
   Users,
-  Plus
+  Plus,
+  LogOut,
+  User
 } from 'lucide-react';
 import logoImage from "../assets/logo.png";
 import KOLForm from './KOLForm';
 import { KOL_TYPES } from '../data/models';
+import { useDatabase } from '../contexts/DatabaseContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const MotionBox = motion(Box);
 
@@ -40,6 +50,8 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
+  const { createKOL } = useDatabase();
+  const { user, logout } = useAuth();
   const { isOpen: isTypeSelectOpen, onOpen: onTypeSelectOpen, onClose: onTypeSelectClose } = useDisclosure();
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   
@@ -106,8 +118,9 @@ const Navigation = () => {
 
   const handleSave = async (kolData) => {
     try {
-      // Here you would typically save the KOL data
-      // For now, we'll just show a success message
+      // Save the KOL data to the database
+      await createKOL(kolData);
+      
       toast({
         title: 'Success!',
         description: 'KOL record saved successfully',
@@ -119,8 +132,16 @@ const Navigation = () => {
       onFormClose();
       setSelectedKOLType(null);
       
-      // Optionally refresh the current page to show the new KOL
-      // window.location.reload();
+      // Navigate to the appropriate page to show the new KOL
+      if (selectedKOLType === KOL_TYPES.SOCIAL_MEDIA) {
+        navigate('/social-media');
+      } else if (selectedKOLType === KOL_TYPES.TWITTER_THREAD) {
+        navigate('/twitter-thread');
+      } else if (selectedKOLType === KOL_TYPES.BLOGGER) {
+        navigate('/blogger');
+      } else if (selectedKOLType === KOL_TYPES.PRODUCTION_TALENT) {
+        navigate('/production-talent');
+      }
     } catch (error) {
       toast({
         title: 'Error!',
@@ -258,37 +279,105 @@ const Navigation = () => {
             </HStack>
 
             {/* Right Side Actions */}
-            <MotionBox
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Button
-                size="sm"
-                colorScheme="red"
-                variant="solid"
-                borderRadius="xl"
-                px={4}
-                py={2}
-                h="auto"
-                fontSize="sm"
-                fontWeight="600"
-                letterSpacing="tight"
-                boxShadow="0 4px 15px rgba(220, 38, 38, 0.3)"
-                _hover={{
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)'
-                }}
-                _active={{
-                  transform: 'translateY(0)'
-                }}
-                transition="all 0.2s ease"
-                className="hover-lift"
-                onClick={onTypeSelectOpen}
+            <HStack spacing={3}>
+              <MotionBox
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
               >
-                + Add KOL
-              </Button>
-            </MotionBox>
+                <Button
+                  size="sm"
+                  colorScheme="red"
+                  variant="solid"
+                  borderRadius="xl"
+                  px={4}
+                  py={2}
+                  h="auto"
+                  fontSize="sm"
+                  fontWeight="600"
+                  letterSpacing="tight"
+                  boxShadow="0 4px 15px rgba(220, 38, 38, 0.3)"
+                  _hover={{
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)'
+                  }}
+                  _active={{
+                    transform: 'translateY(0)'
+                  }}
+                  transition="all 0.2s ease"
+                  className="hover-lift"
+                  onClick={onTypeSelectOpen}
+                >
+                  + Add KOL
+                </Button>
+              </MotionBox>
+
+              {/* User Menu */}
+              <MotionBox
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    variant="ghost"
+                    size="sm"
+                    borderRadius="xl"
+                    px={3}
+                    py={2}
+                    h="auto"
+                    _hover={{
+                      bg: 'rgba(220, 38, 38, 0.05)',
+                      transform: 'translateY(-1px)',
+                    }}
+                    transition="all 0.2s ease"
+                  >
+                    <HStack spacing={2}>
+                      <Avatar
+                        size="sm"
+                        name={user?.name || 'User'}
+                        bg="red.500"
+                        color="white"
+                        fontSize="xs"
+                      />
+                      <Text
+                        fontSize="sm"
+                        fontWeight="600"
+                        color="gray.700"
+                        display={{ base: 'none', md: 'block' }}
+                      >
+                        {user?.name || 'User'}
+                      </Text>
+                    </HStack>
+                  </MenuButton>
+                  <MenuList
+                    bg="rgba(255, 255, 255, 0.95)"
+                    backdropFilter="blur(20px)"
+                    border="1px solid"
+                    borderColor="rgba(220, 38, 38, 0.1)"
+                    borderRadius="xl"
+                    boxShadow="0 8px 32px rgba(0, 0, 0, 0.1)"
+                  >
+                    <MenuItem
+                      icon={<User size={16} />}
+                      _hover={{ bg: 'rgba(220, 38, 38, 0.05)' }}
+                    >
+                      Profile
+                    </MenuItem>
+                    <MenuDivider />
+                    <MenuItem
+                      icon={<LogOut size={16} />}
+                      onClick={logout}
+                      _hover={{ bg: 'rgba(220, 38, 38, 0.05)' }}
+                      color="red.500"
+                    >
+                      Sign Out
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              </MotionBox>
+            </HStack>
           </Flex>
         </Container>
       </Box>
