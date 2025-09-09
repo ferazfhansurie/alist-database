@@ -413,17 +413,17 @@ const Dashboard = () => {
                         }}
                       >
                         <Flex justify="space-between" align="center">
-                          <HStack spacing={3}>
+                          <HStack spacing={3} align="center">
                             <Circle size="32px" bg="red.100" color="red.600">
                               <Text fontSize="xs" fontWeight="700">
                                 {kol.name.charAt(0)}
                               </Text>
                             </Circle>
-                            <Box>
+                            <VStack align="start" spacing={1}>
                               <Text fontWeight="600" color="gray.900" fontSize="sm">
                                 {kol.name}
                               </Text>
-                              <HStack spacing={2}>
+                              <HStack spacing={2} align="center">
                                 <Badge 
                                   colorScheme="red" 
                                   variant="subtle" 
@@ -437,7 +437,7 @@ const Dashboard = () => {
                                   {kol.niches[0]}
                                 </Text>
                               </HStack>
-                            </Box>
+                            </VStack>
                           </HStack>
                           <VStack align="end" spacing={0}>
                             <Text fontWeight="700" color="red.600" fontSize="sm">
