@@ -5,21 +5,23 @@ import {
   Container,
   Grid,
   Text,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
   Button,
   VStack,
   HStack,
   Icon,
   Flex,
-  Heading,
   Badge,
   SimpleGrid,
   Circle,
-  Progress,
-  useColorModeValue
+  useColorModeValue,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  useToast
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import {
@@ -39,17 +41,74 @@ import {
 } from 'lucide-react';
 import { KOL_TYPES } from '../data/models';
 import { useDatabase } from '../contexts/DatabaseContext';
+import KOLForm from './KOLForm';
 
 const MotionBox = motion(Box);
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { kols, stats, loading, error } = useDatabase();
+  const toast = useToast();
+  const { kols, stats, loading, error, createKOL } = useDatabase();
+  const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
+  const [selectedKOLType, setSelectedKOLType] = useState(null);
 
-  // Glassmorphism colors
-  const glassBg = useColorModeValue('rgba(255, 255, 255, 0.25)', 'rgba(26, 32, 44, 0.25)');
-  const glassBorder = useColorModeValue('rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.18)');
-  const glassShadow = useColorModeValue('0 8px 32px 0 rgba(31, 38, 135, 0.37)', '0 8px 32px 0 rgba(0, 0, 0, 0.37)');
+  const handleQuickAction = (kolType) => {
+    setSelectedKOLType(kolType);
+    onFormOpen();
+  };
+
+  const handleSave = async (kolData) => {
+    try {
+      await createKOL(kolData);
+      
+      toast({
+        title: 'Success!',
+        description: 'KOL record saved successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      onFormClose();
+      setSelectedKOLType(null);
+      
+      // Navigate to the appropriate page to show the new KOL
+      if (selectedKOLType === KOL_TYPES.SOCIAL_MEDIA) {
+        navigate('/social-media');
+      } else if (selectedKOLType === KOL_TYPES.TWITTER_THREAD) {
+        navigate('/twitter-thread');
+      } else if (selectedKOLType === KOL_TYPES.BLOGGER) {
+        navigate('/blogger');
+      } else if (selectedKOLType === KOL_TYPES.PRODUCTION_TALENT) {
+        navigate('/production-talent');
+      }
+    } catch (error) {
+      toast({
+        title: 'Error!',
+        description: error.message || 'Failed to save KOL record',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const getFormTitle = () => {
+    if (!selectedKOLType) return 'Add New KOL';
+    
+    switch (selectedKOLType) {
+      case KOL_TYPES.SOCIAL_MEDIA:
+        return 'Add New Social Media KOL';
+      case KOL_TYPES.TWITTER_THREAD:
+        return 'Add New Twitter/Thread KOL';
+      case KOL_TYPES.BLOGGER:
+        return 'Add New Blogger KOL';
+      case KOL_TYPES.PRODUCTION_TALENT:
+        return 'Add New Production Talent KOL';
+      default:
+        return 'Add New KOL';
+    }
+  };
 
   // Show loading state
   if (loading) {
@@ -153,236 +212,242 @@ const Dashboard = () => {
     {
       label: 'Add Social Media KOL',
       icon: Instagram,
-      path: '/social-media',
+      kolType: KOL_TYPES.SOCIAL_MEDIA,
       color: 'red',
       description: 'TikTok, Instagram, Facebook'
     },
     {
       label: 'Add Twitter KOL',
       icon: Twitter,
-      path: '/twitter-thread',
+      kolType: KOL_TYPES.TWITTER_THREAD,
       color: 'red',
       description: 'Twitter & Thread influencers'
     },
     {
       label: 'Add Blogger',
       icon: FileText,
-      path: '/blogger',
+      kolType: KOL_TYPES.BLOGGER,
       color: 'red',
       description: 'Blogspot & independent blogs'
     },
     {
       label: 'Add Production Talent',
       icon: TrendingUp,
-      path: '/production-talent',
+      kolType: KOL_TYPES.PRODUCTION_TALENT,
       color: 'red',
       description: 'Models, actors, voice talents'
     }
   ];
 
-  const performanceMetrics = [
-    { label: 'Engagement Rate', value: '8.2%', change: '+2.1%', positive: true },
-    { label: 'Conversion Rate', value: '3.8%', change: '+0.5%', positive: true },
-    { label: 'ROI', value: '4.2x', change: '+0.8x', positive: true },
-    { label: 'Response Time', value: '2.4h', change: '-0.6h', positive: true }
-  ];
 
   return (
     <Box
       minH="100vh"
       bgGradient="linear(to-br, gray.50, red.50, white)"
-      py={8}
-      px={4}
+      py={{ base: 2, md: 4 }}
+      px={{ base: 1, md: 2 }}
     >
-      <Container maxW="container.xl">
+      <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
         <MotionBox
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <VStack spacing={6} align="stretch">
-            {/* Header */}
-      
+          <VStack spacing={{ base: 3, md: 4 }} align="stretch">
+         
 
             {/* Stats Grid */}
-            <Box>
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
-                {statCards.map((stat, index) => (
-                  <MotionBox
-                    key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
+            <SimpleGrid columns={{ base: 2, md: 3, lg: 6 }} spacing={{ base: 2, md: 3 }}>
+              {statCards.map((stat, index) => (
+                <MotionBox
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.05 }}
+                >
+                  <Box
+                    bg="white"
+                    border="1px solid"
+                    borderColor="gray.100"
+                    borderRadius="xl"
+                    p={{ base: 3, md: 4 }}
+                    boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
+                    cursor="pointer"
+                    onClick={() => navigate(stat.path)}
+                    transition="all 0.2s ease"
+                    _hover={{
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(220, 38, 38, 0.15)',
+                      borderColor: 'red.200',
+                    }}
+                    position="relative"
+                    overflow="hidden"
+                    _before={{
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: stat.color,
+                      transform: 'scaleX(0)',
+                      transformOrigin: 'left',
+                      transition: 'transform 0.3s ease'
+                    }}
+                    _after={{
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      width: '3px',
+                      background: `linear-gradient(180deg, ${stat.color}20, transparent)`,
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                    sx={{
+                      '&:hover::before': {
+                        transform: 'scaleX(1)'
+                      },
+                      '&:hover::after': {
+                        opacity: 1
+                      }
+                    }}
                   >
-                    <Box
-                      bg={glassBg}
-                      backdropFilter="blur(20px)"
-                      border="1px solid"
-                      borderColor={glassBorder}
-                      borderRadius="2xl"
-                      p={5}
-                      boxShadow={glassShadow}
-                      cursor="pointer"
-                      onClick={() => navigate(stat.path)}
-                      transition="all 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
-                      _hover={{
-                        transform: 'translateY(-8px) scale(1.02)',
-                        boxShadow: '0 20px 40px rgba(220, 38, 38, 0.15)',
-                        borderColor: 'red.300',
-                        _before: {
-                          transform: 'scaleX(1)'
-                        }
-                      }}
-                      position="relative"
-                      overflow="hidden"
-                      _before={{
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: '2px',
-                        background: `linear-gradient(90deg, ${stat.color}, ${stat.color}80)`,
-                        transform: 'scaleX(0)',
-                        transition: 'transform 0.3s ease'
-                      }}
-                    >
-                      <VStack spacing={4} align="stretch">
-                        <Flex justify="space-between" align="start">
-                          <Circle 
-                            size="45px" 
-                            bg={`${stat.color}15`} 
-                            color={stat.color}
-                            backdropFilter="blur(10px)"
-                            border="1px solid"
-                            borderColor={`${stat.color}30`}
-                          >
-                            <Icon as={stat.icon} boxSize={5} />
-                          </Circle>
-                          <Badge
-                            colorScheme={stat.statusColor}
-                            variant="solid"
-                            fontSize="xs"
-                            px={2}
-                            py={1}
-                            borderRadius="full"
-                            fontWeight="600"
-                            backdropFilter="blur(10px)"
-                          >
-                            {stat.status}
-                          </Badge>
-                        </Flex>
-                        
-                        <VStack align="start" spacing={2}>
-                          <Stat>
-                            <StatLabel fontSize="sm" color="gray.600" fontWeight="600" mb={1}>
-                              {stat.label}
-                            </StatLabel>
-                            <StatNumber fontSize="2xl" color="gray.800" fontWeight="800" mb={1}>
-                              {stat.label.includes('Rate') ? `RM ${stat.value.toLocaleString()}` : stat.value.toLocaleString()}
-                            </StatNumber>
-                            <StatHelpText color="gray.500" fontSize="xs" fontWeight="500">
-                              {stat.description}
-                            </StatHelpText>
-                          </Stat>
-                        </VStack>
-                      </VStack>
-                    </Box>
-                  </MotionBox>
-                ))}
-              </SimpleGrid>
-            </Box>
+                    <VStack spacing={2} align="start">
+                      <Flex justify="space-between" align="center" w="full">
+                        <Circle 
+                          size="32px"
+                          bg={`${stat.color}10`} 
+                          color={stat.color}
+                        >
+                          <Icon as={stat.icon} boxSize={4} />
+                        </Circle>
+                        <Badge
+                          colorScheme={stat.statusColor}
+                          variant="subtle"
+                          fontSize="10px"
+                          px={2}
+                          py={0.5}
+                          borderRadius="full"
+                          fontWeight="600"
+                        >
+                          {stat.status}
+                        </Badge>
+                      </Flex>
+                      
+                      <Box>
+                        <Text fontSize="xs" color="gray.500" fontWeight="500" mb={1}>
+                          {stat.label}
+                        </Text>
+                        <Text fontSize={{ base: "lg", md: "xl" }} color="gray.900" fontWeight="700">
+                          {stat.label.includes('Rate') ? `RM ${stat.value.toLocaleString()}` : stat.value.toLocaleString()}
+                        </Text>
+                        <Text color="gray.400" fontSize="10px" fontWeight="500" mt={1} noOfLines={1}>
+                          {stat.description}
+                        </Text>
+                      </Box>
+                    </VStack>
+                  </Box>
+                </MotionBox>
+              ))}
+            </SimpleGrid>
 
        
 
             {/* Recent Activity & Quick Actions */}
-            <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={5}>
+            <Grid templateColumns={{ base: '1fr', lg: '1.5fr 1fr' }} gap={{ base: 3, md: 4 }}>
               {/* Recent KOLs */}
               <Box 
-                bg={glassBg}
-                backdropFilter="blur(20px)"
+                bg="white"
                 border="1px solid"
-                borderColor={glassBorder}
-                p={6} 
-                borderRadius="2xl" 
-                boxShadow={glassShadow}
+                borderColor="gray.100"
+                p={{ base: 4, md: 5 }}
+                borderRadius="xl"
+                boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
               >
-                <Flex justify="space-between" align="center" mb={6}>
-                  <Heading size="md" color="gray.800" fontWeight="700">
+                <Flex justify="space-between" align="center" mb={4}>
+                  <Text fontSize="md" color="gray.900" fontWeight="600">
                     Recent KOLs
-                  </Heading>
+                  </Text>
                   <Button
                     colorScheme="red"
                     variant="ghost"
-                    size="sm"
-                    rightIcon={<ArrowUpRight size={16} />}
+                    size="xs"
+                    rightIcon={<ArrowUpRight size={12} />}
                     onClick={() => navigate('/social-media')}
                     borderRadius="full"
-                    fontWeight="600"
+                    fontWeight="500"
+                    px={3}
                     _hover={{
                       bg: 'red.50',
-                      transform: 'translateY(-1px)'
                     }}
                     transition="all 0.2s ease"
+                    fontSize="xs"
                   >
                     View All
                   </Button>
                 </Flex>
 
-                <VStack spacing={3} align="stretch">
+                <VStack spacing={2} align="stretch">
                   {recentKOLs.map((kol, index) => (
                     <MotionBox
                       key={kol.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                      transition={{ duration: 0.4, delay: index * 0.05 }}
                     >
                       <Box
-                        bg="rgba(255, 255, 255, 0.6)"
-                        backdropFilter="blur(10px)"
-                        p={4}
-                        borderRadius="xl"
+                        bg="gray.50"
+                        p={3}
+                        borderRadius="lg"
                         border="1px solid"
-                        borderColor="rgba(255, 255, 255, 0.2)"
+                        borderColor="gray.100"
                         cursor="pointer"
                         onClick={() => navigate('/social-media')}
-                        transition="all 0.3s ease"
+                        transition="all 0.2s ease"
                         _hover={{
-                          bg: 'rgba(254, 226, 226, 0.8)',
+                          bg: 'red.50',
                           borderColor: 'red.200',
-                          transform: 'translateX(4px)'
+                          transform: 'translateX(2px)'
                         }}
                       >
                         <Flex justify="space-between" align="center">
-                          <VStack align="start" spacing={2}>
-                            <Text fontWeight="700" color="gray.800" fontSize="sm">
-                              {kol.name}
-                            </Text>
-                            <HStack spacing={3}>
-                              <Badge 
-                                colorScheme="red" 
-                                variant="subtle" 
-                                size="sm" 
-                                borderRadius="full"
-                                fontWeight="600"
-                              >
-                                {kol.tier}
-                              </Badge>
-                              <Text fontSize="xs" color="gray.500" fontWeight="500">
-                                {kol.niches.slice(0, 2).join(', ')}
+                          <HStack spacing={3}>
+                            <Circle size="32px" bg="red.100" color="red.600">
+                              <Text fontSize="xs" fontWeight="700">
+                                {kol.name.charAt(0)}
                               </Text>
-                            </HStack>
-                          </VStack>
-                          <VStack align="end" spacing={2}>
-                            <Text fontWeight="800" color="red.600" fontSize="lg">
+                            </Circle>
+                            <Box>
+                              <Text fontWeight="600" color="gray.900" fontSize="sm">
+                                {kol.name}
+                              </Text>
+                              <HStack spacing={2}>
+                                <Badge 
+                                  colorScheme="red" 
+                                  variant="subtle" 
+                                  size="xs" 
+                                  borderRadius="full"
+                                  fontSize="xx-small"
+                                >
+                                  {kol.tier}
+                                </Badge>
+                                <Text fontSize="xs" color="gray.500">
+                                  {kol.niches[0]}
+                                </Text>
+                              </HStack>
+                            </Box>
+                          </HStack>
+                          <VStack align="end" spacing={0}>
+                            <Text fontWeight="700" color="red.600" fontSize="sm">
                               RM {kol.rate.toLocaleString()}
                             </Text>
                             <Badge 
                               colorScheme="blue" 
                               variant="subtle" 
-                              size="sm" 
-                              borderRadius="full"
-                              fontWeight="600"
+                              size="xs" 
+                              fontSize="xx-small"
                             >
                               {kol.kolType.replace('-', ' ').toUpperCase()}
                             </Badge>
@@ -396,18 +461,22 @@ const Dashboard = () => {
 
               {/* Quick Actions */}
               <Box 
-                bg={glassBg}
-                backdropFilter="blur(20px)"
+                bg="white"
                 border="1px solid"
-                borderColor={glassBorder}
-                p={6} 
-                borderRadius="2xl" 
-                boxShadow={glassShadow}
+                borderColor="gray.100"
+                p={{ base: 4, md: 5 }}
+                borderRadius="xl"
+                boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
               >
-                <Heading size="md" color="gray.800" mb={6} fontWeight="700" textAlign="center">
+                <Text 
+                  fontSize="md" 
+                  color="gray.900" 
+                  mb={4} 
+                  fontWeight="600"
+                >
                   Quick Actions
-                </Heading>
-                <VStack spacing={3} align="stretch">
+                </Text>
+                <VStack spacing={2} align="stretch">
                   {quickActions.map((action, index) => {
                     const IconComponent = action.icon;
                     return (
@@ -415,37 +484,38 @@ const Dashboard = () => {
                         key={action.label}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4, delay: index * 0.1 }}
+                        transition={{ duration: 0.4, delay: index * 0.05 }}
                       >
                         <Button
                           colorScheme="red"
                           variant="ghost"
-                          size="lg"
-                          leftIcon={<IconComponent size={18} />}
-                          onClick={() => navigate(action.path)}
+                          size="sm"
+                          leftIcon={<IconComponent size={16} />}
+                          onClick={() => handleQuickAction(action.kolType)}
                           justifyContent="start"
                           w="full"
                           h="auto"
-                          py={4}
-                          px={4}
-                          borderRadius="xl"
-                          fontWeight="600"
-                          bg="rgba(255, 255, 255, 0.6)"
-                          backdropFilter="blur(10px)"
+                          py={3}
+                          px={3}
+                          borderRadius="lg"
+                          fontWeight="500"
+                          bg="gray.50"
                           border="1px solid"
-                          borderColor="rgba(255, 255, 255, 0.2)"
+                          borderColor="gray.100"
+                          color="gray.700"
                           _hover={{
-                            bg: 'rgba(254, 226, 226, 0.8)',
-                            borderColor: 'red.300',
-                            transform: 'translateY(-2px) scale(1.02)'
+                            bg: 'red.50',
+                            borderColor: 'red.200',
+                            color: 'red.700',
+                            transform: 'translateY(-1px)'
                           }}
-                          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                          transition="all 0.2s ease"
                         >
-                          <VStack align="start" spacing={1} w="full">
-                            <Text fontWeight="700" fontSize="sm">
-                              {action.label}
+                          <VStack align="start" spacing={0} w="full">
+                            <Text fontWeight="600" fontSize="sm">
+                              {action.label.replace('Add ', '')}
                             </Text>
-                            <Text fontSize="xs" color="gray.500" fontWeight="500">
+                            <Text fontSize="xs" color="gray.500" fontWeight="400">
                               {action.description}
                             </Text>
                           </VStack>
@@ -459,6 +529,41 @@ const Dashboard = () => {
           </VStack>
         </MotionBox>
       </Container>
+
+      {/* Add KOL Form Modal */}
+      <Modal 
+        isOpen={isFormOpen} 
+        onClose={onFormClose} 
+        size={{ base: "full", lg: "6xl" }} 
+        scrollBehavior="inside"
+        motionPreset="slideInBottom"
+      >
+        <ModalOverlay backdropFilter="blur(10px)" />
+        <ModalContent 
+          bg="white"
+          border="1px solid"
+          borderColor="gray.100"
+          borderRadius={{ base: "0", md: "2xl" }}
+          boxShadow="0 8px 32px rgba(0, 0, 0, 0.1)"
+          m={{ base: 0, md: 4 }}
+        >
+          <ModalHeader color="red.600" fontWeight="700" px={{ base: 4, md: 6 }}>
+            {getFormTitle()}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6} px={{ base: 4, md: 6 }}>
+            {selectedKOLType && (
+              <KOLForm
+                initialData={null}
+                kolType={selectedKOLType}
+                onSave={handleSave}
+                onCancel={onFormClose}
+                title={getFormTitle()}
+              />
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

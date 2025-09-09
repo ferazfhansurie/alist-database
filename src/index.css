@@ -30,26 +30,44 @@ body {
   text-align: center;
 }
 
-/* Clean, professional design */
-.glass {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(220, 38, 38, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border-radius: 12px;
-}
-
-.glass-card {
+/* Modern, clean design */
+.glass, .glass-card {
   background: white;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
 .glass-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  border-color: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+  border-color: #fca5a5;
+}
+
+/* Modern table styles */
+.chakra-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.chakra-table th {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  padding: 8px 12px !important;
+}
+
+.chakra-table td {
+  border-bottom: 1px solid #f3f4f6 !important;
+  padding: 8px 12px !important;
+  font-size: 0.875rem !important;
+}
+
+.chakra-table tbody tr:hover {
+  background: #f9fafb !important;
 }
 
 .glass-input {
@@ -242,10 +260,27 @@ body {
   
   .glass-input {
     border-radius: 10px;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
   .glass-button {
     border-radius: 10px;
+    min-height: 44px; /* iOS touch target size */
+  }
+  
+  /* Better touch targets */
+  button {
+    min-height: 44px;
+  }
+  
+  /* Optimize text for mobile reading */
+  body {
+    line-height: 1.5;
+  }
+  
+  /* Prevent horizontal scroll on mobile */
+  html, body {
+    overflow-x: hidden;
   }
 }
 
@@ -253,6 +288,41 @@ body {
   .glass-card {
     border-radius: 10px;
     margin: 2px;
+  }
+  
+  /* Extra small screens adjustments */
+  .glass-input {
+    font-size: 16px;
+    padding: 12px;
+  }
+  
+  /* Stack elements more tightly */
+  .chakra-stack > *:not(style) ~ *:not(style) {
+    margin-top: 0.75rem;
+    margin-inline-start: 0px;
+  }
+}
+
+/* Mobile landscape orientation */
+@media (max-width: 896px) and (orientation: landscape) {
+  /* Reduce vertical spacing in landscape */
+  .glass-card {
+    padding: 12px;
+  }
+}
+
+/* Mobile-first responsive breakpoints */
+@media (min-width: 320px) and (max-width: 480px) {
+  /* Small mobile phones */
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  /* Tablets and large phones */
+  :root {
+    font-size: 15px;
   }
 }
 

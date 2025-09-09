@@ -27,7 +27,14 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3001,
-    host: true
+    port: 3000,
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'https://e8c11521c11e51ab.ngrok.app',
+        changeOrigin: true,
+        secure: true
+      }
+    }
   }
 })

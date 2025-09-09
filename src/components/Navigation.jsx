@@ -25,7 +25,15 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  MenuDivider
+  MenuDivider,
+  IconButton,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  DrawerHeader,
+  DrawerBody,
+  Divider
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { 
@@ -36,7 +44,9 @@ import {
   Users,
   Plus,
   LogOut,
-  User
+  User,
+  Settings,
+  Menu as MenuIcon
 } from 'lucide-react';
 import logoImage from "../assets/logo.png";
 import KOLForm from './KOLForm';
@@ -54,6 +64,7 @@ const Navigation = () => {
   const { user, logout } = useAuth();
   const { isOpen: isTypeSelectOpen, onOpen: onTypeSelectOpen, onClose: onTypeSelectClose } = useDisclosure();
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
+  const { isOpen: isMobileMenuOpen, onOpen: onMobileMenuOpen, onClose: onMobileMenuClose } = useDisclosure();
   
   const [selectedKOLType, setSelectedKOLType] = useState(null);
   
@@ -70,7 +81,8 @@ const Navigation = () => {
     { path: '/social-media', label: 'TikTok/IG/FB KOL', icon: Instagram, shortLabel: 'Social' },
     { path: '/twitter-thread', label: 'Twitter/Thread KOL', icon: Twitter, shortLabel: 'Twitter' },
     { path: '/blogger', label: 'Blogspot/Bloggers', icon: FileText, shortLabel: 'Blog' },
-    { path: '/production-talent', label: 'Production Talent', icon: Users, shortLabel: 'Talent' }
+    { path: '/production-talent', label: 'Production Talent', icon: Users, shortLabel: 'Talent' },
+
   ];
 
   const kolTypeOptions = [
@@ -199,16 +211,15 @@ const Navigation = () => {
                   as="img"
                   src={logoImage}
                   alt="THE A-LIST Logo"
-                  h="40px"
+                  h={{ base: "35px", md: "40px" }}
                   w="auto"
                   objectFit="contain"
                 />
-
               </Flex>
             </MotionBox>
 
-            {/* Navigation Items */}
-            <HStack spacing={1}>
+            {/* Desktop Navigation Items */}
+            <HStack spacing={1} display={{ base: 'none', lg: 'flex' }}>
               {navItems.map((item, index) => {
                 const IconComponent = item.icon;
                 return (
@@ -279,11 +290,13 @@ const Navigation = () => {
             </HStack>
 
             {/* Right Side Actions */}
-            <HStack spacing={3}>
+            <HStack spacing={2}>
+              {/* Desktop Add KOL Button */}
               <MotionBox
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
+                display={{ base: 'none', md: 'block' }}
               >
                 <Button
                   size="sm"
@@ -312,11 +325,39 @@ const Navigation = () => {
                 </Button>
               </MotionBox>
 
-              {/* User Menu */}
+              {/* Mobile Add KOL Button */}
+              <MotionBox
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                display={{ base: 'block', md: 'none' }}
+              >
+                <IconButton
+                  size="sm"
+                  colorScheme="red"
+                  variant="solid"
+                  borderRadius="xl"
+                  icon={<Plus size={16} />}
+                  boxShadow="0 4px 15px rgba(220, 38, 38, 0.3)"
+                  _hover={{
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)'
+                  }}
+                  _active={{
+                    transform: 'translateY(0)'
+                  }}
+                  transition="all 0.2s ease"
+                  onClick={onTypeSelectOpen}
+                  aria-label="Add KOL"
+                />
+              </MotionBox>
+
+              {/* Desktop User Menu */}
               <MotionBox
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
+                display={{ base: 'none', md: 'block' }}
               >
                 <Menu>
                   <MenuButton
@@ -345,7 +386,6 @@ const Navigation = () => {
                         fontSize="sm"
                         fontWeight="600"
                         color="gray.700"
-                        display={{ base: 'none', md: 'block' }}
                       >
                         {user?.name || 'User'}
                       </Text>
@@ -365,6 +405,13 @@ const Navigation = () => {
                     >
                       Profile
                     </MenuItem>
+                    <MenuItem
+                      icon={<Settings size={16} />}
+                      onClick={() => navigate('/settings')}
+                      _hover={{ bg: 'rgba(220, 38, 38, 0.05)' }}
+                    >
+                      Settings
+                    </MenuItem>
                     <MenuDivider />
                     <MenuItem
                       icon={<LogOut size={16} />}
@@ -377,28 +424,56 @@ const Navigation = () => {
                   </MenuList>
                 </Menu>
               </MotionBox>
+
+              {/* Mobile Menu Button */}
+              <MotionBox
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                display={{ base: 'block', lg: 'none' }}
+              >
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  borderRadius="xl"
+                  icon={<MenuIcon size={20} />}
+                  onClick={onMobileMenuOpen}
+                  _hover={{
+                    bg: 'rgba(220, 38, 38, 0.05)',
+                    transform: 'translateY(-1px)',
+                  }}
+                  transition="all 0.2s ease"
+                  aria-label="Open menu"
+                />
+              </MotionBox>
             </HStack>
           </Flex>
         </Container>
       </Box>
 
       {/* KOL Type Selection Modal */}
-      <Modal isOpen={isTypeSelectOpen} onClose={onTypeSelectClose} size="2xl">
+      <Modal 
+        isOpen={isTypeSelectOpen} 
+        onClose={onTypeSelectClose} 
+        size={{ base: "full", md: "2xl" }}
+        motionPreset="slideInBottom"
+      >
         <ModalOverlay backdropFilter="blur(10px)" />
         <ModalContent 
           bg={glassBg}
           backdropFilter="blur(20px)"
           border="1px solid"
           borderColor={glassBorder}
-          borderRadius="2xl"
+          borderRadius={{ base: "0", md: "2xl" }}
           boxShadow={glassShadow}
+          m={{ base: 0, md: 4 }}
         >
           <ModalHeader color="red.600" fontWeight="700" textAlign="center">
             Select KOL Type
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing={6}>
+          <ModalBody pb={6} px={{ base: 4, md: 6 }}>
+            <VStack spacing={{ base: 4, md: 6 }}>
               <Text color="gray.600" textAlign="center" fontSize="sm">
                 Choose the type of KOL you want to add to the system
               </Text>
@@ -415,7 +490,7 @@ const Navigation = () => {
                       <Button
                         w="full"
                         h="auto"
-                        p={6}
+                        p={{ base: 4, md: 6 }}
                         borderRadius="xl"
                         bgGradient={option.bgGradient}
                         color="white"
@@ -439,7 +514,7 @@ const Navigation = () => {
                             <IconComponent size={24} color="white" />
                           </Box>
                           <VStack spacing={1}>
-                            <Text fontWeight="700" fontSize="md">
+                            <Text fontWeight="700" fontSize={{ base: "sm", md: "md" }}>
                               {option.label}
                             </Text>
                             <Text fontSize="xs" opacity={0.9} textAlign="center">
@@ -458,21 +533,28 @@ const Navigation = () => {
       </Modal>
 
       {/* Add KOL Form Modal */}
-      <Modal isOpen={isFormOpen} onClose={onFormClose} size="6xl" scrollBehavior="inside">
+      <Modal 
+        isOpen={isFormOpen} 
+        onClose={onFormClose} 
+        size={{ base: "full", lg: "6xl" }} 
+        scrollBehavior="inside"
+        motionPreset="slideInBottom"
+      >
         <ModalOverlay backdropFilter="blur(10px)" />
         <ModalContent 
           bg={glassBg}
           backdropFilter="blur(20px)"
           border="1px solid"
           borderColor={glassBorder}
-          borderRadius="2xl"
+          borderRadius={{ base: "0", md: "2xl" }}
           boxShadow={glassShadow}
+          m={{ base: 0, md: 4 }}
         >
-          <ModalHeader color="red.600" fontWeight="700">
+          <ModalHeader color="red.600" fontWeight="700" px={{ base: 4, md: 6 }}>
             {getFormTitle()}
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody pb={6}>
+          <ModalBody pb={6} px={{ base: 4, md: 6 }}>
             {selectedKOLType && (
               <KOLForm
                 initialData={null}
@@ -485,6 +567,155 @@ const Navigation = () => {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Mobile Navigation Drawer */}
+      <Drawer
+        isOpen={isMobileMenuOpen}
+        placement="right"
+        onClose={onMobileMenuClose}
+        size="sm"
+      >
+        <DrawerOverlay backdropFilter="blur(10px)" />
+        <DrawerContent
+          bg={glassBg}
+          backdropFilter="blur(20px)"
+          border="1px solid"
+          borderColor={glassBorder}
+          boxShadow={glassShadow}
+        >
+          <DrawerCloseButton />
+          <DrawerHeader>
+            <Text color="red.600" fontWeight="700" fontSize="lg">
+              Menu
+            </Text>
+          </DrawerHeader>
+
+          <DrawerBody>
+            <VStack spacing={4} align="stretch">
+              {/* User Info */}
+              <Box
+                bg="rgba(255, 255, 255, 0.6)"
+                backdropFilter="blur(10px)"
+                p={4}
+                borderRadius="xl"
+                border="1px solid"
+                borderColor="rgba(255, 255, 255, 0.2)"
+              >
+                <HStack spacing={3}>
+                  <Avatar
+                    size="md"
+                    name={user?.name || 'User'}
+                    bg="red.500"
+                    color="white"
+                    fontSize="sm"
+                  />
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="700" color="gray.800">
+                      {user?.name || 'User'}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      KOL Manager
+                    </Text>
+                  </VStack>
+                </HStack>
+              </Box>
+
+              <Divider />
+
+              {/* Navigation Items */}
+              <VStack spacing={2} align="stretch">
+                {navItems.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Button
+                      key={item.path}
+                      variant="ghost"
+                      size="lg"
+                      justifyContent="start"
+                      leftIcon={<Icon as={IconComponent} boxSize={5} />}
+                      onClick={() => {
+                        navigate(item.path);
+                        onMobileMenuClose();
+                      }}
+                      bg={isActive(item.path) ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
+                      color={isActive(item.path) ? 'red.600' : 'gray.600'}
+                      fontWeight="600"
+                      borderRadius="xl"
+                      _hover={{
+                        bg: isActive(item.path) ? 'rgba(220, 38, 38, 0.15)' : 'rgba(220, 38, 38, 0.05)',
+                        transform: 'translateX(4px)',
+                      }}
+                      transition="all 0.2s ease"
+                    >
+                      {item.label}
+                    </Button>
+                  );
+                })}
+              </VStack>
+
+              <Divider />
+
+              {/* Profile & Sign Out */}
+              <VStack spacing={2} align="stretch">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  justifyContent="start"
+                  leftIcon={<User size={20} />}
+                  fontWeight="600"
+                  borderRadius="xl"
+                  _hover={{
+                    bg: 'rgba(220, 38, 38, 0.05)',
+                    transform: 'translateX(4px)',
+                  }}
+                  transition="all 0.2s ease"
+                >
+                  Profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  justifyContent="start"
+                  leftIcon={<Settings size={20} />}
+                  onClick={() => {
+                    navigate('/settings');
+                    onMobileMenuClose();
+                  }}
+                  fontWeight="600"
+                  borderRadius="xl"
+                  _hover={{
+                    bg: 'rgba(220, 38, 38, 0.05)',
+                    transform: 'translateX(4px)',
+                  }}
+                  transition="all 0.2s ease"
+                >
+                  Settings
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  justifyContent="start"
+                  leftIcon={<LogOut size={20} />}
+                  onClick={() => {
+                    logout();
+                    onMobileMenuClose();
+                  }}
+                  color="red.500"
+                  fontWeight="600"
+                  borderRadius="xl"
+                  _hover={{
+                    bg: 'rgba(220, 38, 38, 0.05)',
+                    transform: 'translateX(4px)',
+                  }}
+                  transition="all 0.2s ease"
+                >
+                  Sign Out
+                </Button>
+              </VStack>
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };

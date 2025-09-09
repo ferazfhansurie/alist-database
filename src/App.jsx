@@ -7,6 +7,7 @@ import SocialMediaKOL from "./components/SocialMediaKOL";
 import TwitterThreadKOL from "./components/TwitterThreadKOL";
 import BloggerKOL from "./components/BloggerKOL";
 import ProductionTalentKOL from "./components/ProductionTalentKOL";
+import Settings from "./components/Settings";
 import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { DatabaseProvider } from "./contexts/DatabaseContext";
@@ -57,6 +58,14 @@ function App() {
                   <Box bg="white" minH="100vh">
                     <Navigation />
                     <ProductionTalentKOL />
+                  </Box>
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Box bg="white" minH="100vh">
+                    <Navigation />
+                    <Settings />
                   </Box>
                 </ProtectedRoute>
               } />

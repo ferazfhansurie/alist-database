@@ -82,9 +82,62 @@ const KOLForm = ({
   }, [initialData]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Handle platform fields - convert username to full URL
+    let processedValue = value;
+    if (['instagram', 'tiktok', 'facebook', 'twitter', 'thread'].includes(field)) {
+      processedValue = constructPlatformURL(field, value);
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: processedValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // Utility function to construct full URLs from usernames
+  const constructPlatformURL = (platform, username) => {
+    if (!username || !username.trim()) return '';
+    
+    // Remove @ symbol if present
+    const cleanUsername = username.replace(/^@/, '');
+    
+    switch (platform) {
+      case 'instagram':
+        return `https://instagram.com/${cleanUsername}`;
+      case 'tiktok':
+        return `https://tiktok.com/@${cleanUsername}`;
+      case 'facebook':
+        return `https://facebook.com/${cleanUsername}`;
+      case 'twitter':
+        return `https://twitter.com/${cleanUsername}`;
+      case 'thread':
+        return `https://threads.net/@${cleanUsername}`;
+      default:
+        return username;
+    }
+  };
+
+  // Extract username from URL for display purposes
+  const extractUsername = (url, platform) => {
+    if (!url) return '';
+    
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      
+      switch (platform) {
+        case 'instagram':
+        case 'facebook':
+        case 'twitter':
+          return pathname.replace('/', '');
+        case 'tiktok':
+        case 'thread':
+          return pathname.replace('/@', '').replace('/', '');
+        default:
+          return url;
+      }
+    } catch {
+      return url;
     }
   };
 
@@ -116,12 +169,21 @@ const KOLForm = ({
 
     // Platform-specific validation
     if (kolType === KOL_TYPES.SOCIAL_MEDIA) {
-      if (!formData.instagram && !formData.tiktok && !formData.facebook) {
-        newErrors.platforms = 'At least one social media platform is required';
+      // Check if at least one social media platform has a username
+      const hasInstagram = extractUsername(formData.instagram, 'instagram').trim();
+      const hasTiktok = extractUsername(formData.tiktok, 'tiktok').trim();
+      const hasFacebook = extractUsername(formData.facebook, 'facebook').trim();
+      
+      if (!hasInstagram && !hasTiktok && !hasFacebook) {
+        newErrors.platforms = 'At least one social media platform username is required';
       }
     } else if (kolType === KOL_TYPES.TWITTER_THREAD) {
-      if (!formData.twitter && !formData.thread) {
-        newErrors.platforms = 'At least one platform is required';
+      // Check if at least one platform has a username
+      const hasTwitter = extractUsername(formData.twitter, 'twitter').trim();
+      const hasThread = extractUsername(formData.thread, 'thread').trim();
+      
+      if (!hasTwitter && !hasThread) {
+        newErrors.platforms = 'At least one platform username is required';
       }
     } else if (kolType === KOL_TYPES.BLOGGER) {
       if (!formData.blog) {
@@ -207,7 +269,7 @@ const KOLForm = ({
                   <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
                     <User size={14} color="#dc2626" />
                   </Box>
-                  <Text>Instagram Link</Text>
+                  <Text>Instagram Username</Text>
                 </HStack>
               </FormLabel>
               <Input
@@ -216,8 +278,8 @@ const KOLForm = ({
                 border="1px solid"
                 borderColor="rgba(220, 38, 38, 0.2)"
                 borderRadius="lg"
-                placeholder="https://instagram.com/username"
-                value={formData.instagram}
+                placeholder="username (without @)"
+                value={extractUsername(formData.instagram, 'instagram')}
                 onChange={(e) => handleInputChange('instagram', e.target.value)}
                 _focus={{
                   borderColor: 'red.400',
@@ -237,7 +299,7 @@ const KOLForm = ({
                   <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
                     <User size={14} color="#dc2626" />
                   </Box>
-                  <Text>TikTok Link</Text>
+                  <Text>TikTok Username</Text>
                 </HStack>
               </FormLabel>
               <Input
@@ -246,8 +308,8 @@ const KOLForm = ({
                 border="1px solid"
                 borderColor="rgba(220, 38, 38, 0.2)"
                 borderRadius="lg"
-                placeholder="https://tiktok.com/@username"
-                value={formData.tiktok}
+                placeholder="username (without @)"
+                value={extractUsername(formData.tiktok, 'tiktok')}
                 onChange={(e) => handleInputChange('tiktok', e.target.value)}
                 _focus={{
                   borderColor: 'red.400',
@@ -267,7 +329,7 @@ const KOLForm = ({
                   <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
                     <User size={14} color="#dc2626" />
                   </Box>
-                  <Text>Facebook Link</Text>
+                  <Text>Facebook Username</Text>
                 </HStack>
               </FormLabel>
               <Input
@@ -276,8 +338,8 @@ const KOLForm = ({
                 border="1px solid"
                 borderColor="rgba(220, 38, 38, 0.2)"
                 borderRadius="lg"
-                placeholder="https://facebook.com/username"
-                value={formData.facebook}
+                placeholder="username (without @)"
+                value={extractUsername(formData.facebook, 'facebook')}
                 onChange={(e) => handleInputChange('facebook', e.target.value)}
                 _focus={{
                   borderColor: 'red.400',
@@ -302,7 +364,7 @@ const KOLForm = ({
                   <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
                     <User size={14} color="#dc2626" />
                   </Box>
-                  <Text>Twitter Link</Text>
+                  <Text>Twitter Username</Text>
                 </HStack>
               </FormLabel>
               <Input
@@ -311,8 +373,8 @@ const KOLForm = ({
                 border="1px solid"
                 borderColor="rgba(220, 38, 38, 0.2)"
                 borderRadius="lg"
-                placeholder="https://twitter.com/username"
-                value={formData.twitter}
+                placeholder="username (without @)"
+                value={extractUsername(formData.twitter, 'twitter')}
                 onChange={(e) => handleInputChange('twitter', e.target.value)}
                 _focus={{
                   borderColor: 'red.400',
@@ -332,7 +394,7 @@ const KOLForm = ({
                   <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
                     <User size={14} color="#dc2626" />
                   </Box>
-                  <Text>Thread Link</Text>
+                  <Text>Thread Username</Text>
                 </HStack>
               </FormLabel>
               <Input
@@ -341,8 +403,8 @@ const KOLForm = ({
                 border="1px solid"
                 borderColor="rgba(220, 38, 38, 0.2)"
                 borderRadius="lg"
-                placeholder="https://threads.net/@username"
-                value={formData.thread}
+                placeholder="username (without @)"
+                value={extractUsername(formData.thread, 'thread')}
                 onChange={(e) => handleInputChange('thread', e.target.value)}
                 _focus={{
                   borderColor: 'red.400',

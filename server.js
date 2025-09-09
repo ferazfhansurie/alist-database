@@ -7,7 +7,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Database configuration
@@ -664,6 +667,132 @@ app.post('/api/auth/setup', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// User Management API endpoints
+
+// Get all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, email, name, role, created_at, updated_at,
+      CASE 
+        WHEN updated_at > NOW() - INTERVAL '1 hour' THEN 'Now'
+        WHEN updated_at > NOW() - INTERVAL '1 day' THEN 'Today'
+        WHEN updated_at > NOW() - INTERVAL '7 days' THEN 'This week'
+        ELSE 'Older'
+      END as last_active,
+      'active' as status
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+    
+    const users = result.rows.map(user => ({
+      ...user,
+      department: 'Management', // Default department
+      avatar: user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    }));
+    
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create new user
+app.post('/api/users', async (req, res) => {
+  try {
+    const { name, email, role = 'viewer', department, password } = req.body;
+    
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required' });
+    }
+    
+    // Check if user already exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ error: 'User with this email already exists' });
+    }
+    
+    // Use provided password or generate a temporary one
+    const userPassword = password || Math.random().toString(36).slice(-8);
+    
+    // Create new user
+    const result = await pool.query(
+      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, created_at',
+      [email, userPassword, name, role]
+    );
+    
+    const user = result.rows[0];
+    
+    res.status(201).json({
+      ...user,
+      department: department || 'Management',
+      last_active: 'Just created',
+      status: 'active',
+      avatar: user.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+      tempPassword: userPassword // Include the password in response
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update user
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, role, department } = req.body;
+    
+    const result = await pool.query(
+      'UPDATE users SET name = $1, email = $2, role = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, email, name, role, updated_at',
+      [name, email, role, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = result.rows[0];
+    
+    res.json({
+      ...user,
+      department: department || 'Management',
+      last_active: 'Updated',
+      status: 'active',
+      avatar: user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete user
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'DELETE FROM users WHERE id = $1 RETURNING id, name',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully', user: result.rows[0] });
+  } catch (error) {
+    console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
