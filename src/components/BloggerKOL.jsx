@@ -67,6 +67,7 @@ const BloggerKOL = () => {
   const [selectedPic, setSelectedPic] = useState('All PICs');
   const [editingKOL, setEditingKOL] = useState(null);
   const [viewingKOL, setViewingKOL] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
   
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
@@ -284,9 +285,9 @@ const BloggerKOL = () => {
               borderRadius="lg"
               boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
             >
-              {/* Search Bar - Full Width */}
-              <Box mb={3}>
-                <InputGroup size="md">
+              {/* Search Bar and Toggle */}
+              <Flex justify="space-between" align="center" mb={3}>
+                <InputGroup size="md" flex="1" mr={3}>
                   <InputLeftElement>
                     <Search size={18} color="#dc2626" />
                   </InputLeftElement>
@@ -308,10 +309,20 @@ const BloggerKOL = () => {
                     }}
                   />
                 </InputGroup>
-              </Box>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="red"
+                  onClick={() => setShowFilters(!showFilters)}
+                  leftIcon={<Search size={14} />}
+                >
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                </Button>
+              </Flex>
 
-              {/* Filters Row - Compact Grid */}
-              <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(6, 1fr)", xl: "repeat(7, 1fr)" }} gap={2} mb={3}>
+              {/* Filters Row - Collapsible */}
+              {showFilters && (
+                <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(6, 1fr)", xl: "repeat(7, 1fr)" }} gap={2} mb={3}>
                 {/* Tier Filter */}
                 <Box>
                   <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
@@ -473,6 +484,7 @@ const BloggerKOL = () => {
                   </Select>
                 </Box>
               </Grid>
+              )}
 
               {/* Results Summary & Quick Actions */}
               <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
