@@ -4,13 +4,13 @@
 CREATE TYPE kol_type AS ENUM ('social-media', 'twitter-thread', 'blogger', 'production-talent');
 
 -- Create tiers enum
-CREATE TYPE tier AS ENUM ('Tier 1 (Premium)', 'Tier 2 (Mid-tier)', 'Tier 3 (Emerging)', 'Tier 4 (Micro)');
+CREATE TYPE tier AS ENUM ('Tier 1 (Premium)', 'Tier 2 (Mid-tier)', 'Tier 3 (Emerging)', 'Tier 4 (Micro)', 'NANO', 'MICRO', 'MACRO', 'MEGA', 'MID-TIER');
 
 -- Create gender enum
 CREATE TYPE gender AS ENUM ('Male', 'Female', 'Other');
 
 -- Create hair style enum
-CREATE TYPE hair_style AS ENUM ('Hijab', 'Free Hair');
+CREATE TYPE hair_style AS ENUM ('Hijab', 'Free Hair', 'Not Related');
 
 -- Create race enum
 CREATE TYPE race AS ENUM ('Malay', 'Chinese', 'Indian', 'Other Asian', 'Caucasian', 'African', 'Mixed Race', 'Other');
@@ -38,6 +38,12 @@ CREATE TABLE IF NOT EXISTS kols (
   thread VARCHAR(500),
   blog VARCHAR(500),
   rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+  instagram_rate DECIMAL(10,2) DEFAULT 0,
+  tiktok_rate DECIMAL(10,2) DEFAULT 0,
+  facebook_rate DECIMAL(10,2) DEFAULT 0,
+  twitter_rate DECIMAL(10,2) DEFAULT 0,
+  thread_rate DECIMAL(10,2) DEFAULT 0,
+  blog_rate DECIMAL(10,2) DEFAULT 0,
   tier tier NOT NULL DEFAULT 'Tier 3 (Emerging)',
   gender gender NOT NULL DEFAULT 'Other',
   hair_style hair_style NOT NULL DEFAULT 'Free Hair',
@@ -82,7 +88,14 @@ INSERT INTO niches (name) VALUES
   ('News & Politics'),
   ('Religion & Spirituality'),
   ('Pet & Animal'),
-  ('Home & Garden')
+  ('Home & Garden'),
+  ('GENERAL'),
+  ('BEAUTY'),
+  ('COMEDY/ TREND'),
+  ('PROFESSIONAL/ MEDICAL'),
+  ('EDUCATION'),
+  ('SKINCARE'),
+  ('AUTOMOTIVE')
 ON CONFLICT (name) DO NOTHING;
 
 -- Create indexes for better performance

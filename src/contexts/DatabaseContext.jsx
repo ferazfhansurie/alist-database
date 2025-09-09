@@ -59,6 +59,12 @@ export const DatabaseProvider = ({ children }) => {
       thread: kol.thread,
       blog: kol.blog,
       rate: kol.rate,
+      instagramRate: kol.instagramRate,
+      tiktokRate: kol.tiktokRate,
+      facebookRate: kol.facebookRate,
+      twitterRate: kol.twitterRate,
+      threadRate: kol.threadRate,
+      blogRate: kol.blogRate,
       tier: kol.tier,
       gender: kol.gender,
       niches: kol.niches || [],
@@ -80,7 +86,7 @@ export const DatabaseProvider = ({ children }) => {
   // Load all KOLs
   const loadKOLs = async () => {
     try {
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/kols');
+      const response = await fetch('http://localhost:3001/api/kols');
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs');
       }
@@ -88,16 +94,18 @@ export const DatabaseProvider = ({ children }) => {
       // Transform the data to match frontend expectations
       const transformedData = data.map(transformKOLData);
       setKols(transformedData);
+      return transformedData; // Return the data so it can be used in components
     } catch (err) {
       console.error('Error loading KOLs:', err);
       setError(err.message);
+      return []; // Return empty array on error
     }
   };
 
   // Load KOLs by type
   const loadKOLsByType = async (kolType) => {
     try {
-      const response = await fetch(`https://e8c11521c11e51ab.ngrok.app/api/kols/type/${kolType}`);
+      const response = await fetch(`http://localhost:3001/api/kols/type/${kolType}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs by type');
       }
@@ -114,7 +122,7 @@ export const DatabaseProvider = ({ children }) => {
   // Load statistics
   const loadStats = async () => {
     try {
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/kols/stats');
+      const response = await fetch('http://localhost:3001/api/kols/stats');
       if (!response.ok) {
         throw new Error('Failed to fetch stats');
       }
@@ -137,7 +145,7 @@ export const DatabaseProvider = ({ children }) => {
   // Create new KOL
   const createKOL = async (kolData) => {
     try {
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/kols', {
+      const response = await fetch('http://localhost:3001/api/kols', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +172,7 @@ export const DatabaseProvider = ({ children }) => {
   // Update KOL
   const updateKOL = async (id, kolData) => {
     try {
-      const response = await fetch(`https://e8c11521c11e51ab.ngrok.app/api/kols/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/kols/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +199,7 @@ export const DatabaseProvider = ({ children }) => {
   // Delete KOL
   const deleteKOL = async (id) => {
     try {
-      const response = await fetch(`https://e8c11521c11e51ab.ngrok.app/api/kols/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/kols/${id}`, {
         method: 'DELETE',
       });
       
@@ -211,7 +219,7 @@ export const DatabaseProvider = ({ children }) => {
   // Get KOL by ID
   const getKOLById = async (id) => {
     try {
-      const response = await fetch(`https://e8c11521c11e51ab.ngrok.app/api/kols/${id}`);
+      const response = await fetch(`http://localhost:3001/api/kols/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOL');
       }
@@ -228,7 +236,7 @@ export const DatabaseProvider = ({ children }) => {
   // Get all niches
   const getNiches = async () => {
     try {
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/niches');
+      const response = await fetch('http://localhost:3001/api/niches');
       if (!response.ok) {
         throw new Error('Failed to fetch niches');
       }

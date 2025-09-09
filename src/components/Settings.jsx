@@ -167,19 +167,63 @@ const Settings = () => {
     return result;
   };
 
+  // Helper function to clean and parse rate values
+  const parseRate = (rateString) => {
+    if (!rateString || rateString.trim() === '') return 0;
+    
+    // Remove "RM" prefix, commas, and spaces
+    const cleaned = rateString.replace(/RM/g, '').replace(/,/g, '').replace(/\s/g, '');
+    
+    // Extract numeric value
+    const match = cleaned.match(/(\d+\.?\d*)/);
+    return match ? parseFloat(match[1]) : 0;
+  };
+
+  // Helper function to determine KOL type based on available platforms
+  const determineKOLType = (instagram, tiktok, facebook, twitter, thread, blog) => {
+    const platforms = [instagram, tiktok, facebook, twitter, thread, blog].filter(p => p && p.trim() !== '');
+    
+    if (platforms.length === 0) return 'social-media';
+    if (instagram && tiktok) return 'social-media';
+    if (tiktok && !instagram) return 'tiktok';
+    if (instagram && !tiktok) return 'instagram';
+    if (twitter || thread) return 'twitter-thread';
+    if (blog) return 'blogger';
+    
+    return 'social-media';
+  };
+
+  // Helper function to clean and format hair style
+  const formatHairStyle = (hairStyle) => {
+    if (!hairStyle || hairStyle.trim() === '') return 'Free Hair';
+    
+    const cleaned = hairStyle.trim().toLowerCase();
+    if (cleaned.includes('hijab')) return 'Hijab';
+    if (cleaned.includes('free')) return 'Free Hair';
+    if (cleaned.includes('not related')) return 'Not Related';
+    
+    // Handle exact matches
+    const upperCleaned = hairStyle.trim().toUpperCase();
+    if (upperCleaned === 'HIJAB') return 'Hijab';
+    if (upperCleaned === 'FREE HAIR') return 'Free Hair';
+    if (upperCleaned === 'NOT RELATED') return 'Not Related';
+    
+    return hairStyle.trim();
+  };
+
   // Download CSV template
   const handleDownloadTemplate = () => {
     const templateData = [
-      'name,instagram,tiktok,facebook,twitter,thread,blog,rate,tier,gender,hair_style,race,address,contact_number,rate_details,pic,kol_type,notes,niches',
-      'John Doe,https://instagram.com/johndoe,https://tiktok.com/@johndoe,,,,,2500,Tier 1 (Premium),Male,Free Hair,Chinese,Selangor,+60123456789,Includes 3 posts + 5 stories,Amir,social-media,Sample KOL,Fashion & Beauty;Lifestyle',
-      'Jane Smith,,,,https://twitter.com/janesmith,https://threads.net/@janesmith,,,1800,Tier 2 (Mid-tier),Female,Free Hair,Malay,Kuala Lumpur,+60187654321,Includes 2 tweets + 1 thread,Tika,twitter-thread,Another sample,Technology;Business & Finance'
+      'No,Name,IG Link,Rate for IG,TIKTOK link,Rate for Tiktok,Facebook,Facebook Rate,Twitter,Twitter Rate,Thread,Thread Rate,Blog,Blog Rate,Tier,Gender,Niche,Hijab/Free Hair,Race,Address,Contact Number,Date Rates & Details,PIC',
+      '1,John Doe,https://instagram.com/johndoe,RM2500,https://tiktok.com/@johndoe,RM3000,https://facebook.com/johndoe,RM2000,https://twitter.com/johndoe,RM1500,https://threads.net/@johndoe,RM1800,https://johndoe.blogspot.com,RM1200,NANO,Male,"Fashion & Beauty;Lifestyle",Free Hair,Chinese,Selangor,+60123456789,Includes 3 posts + 5 stories,Amir',
+      '2,Jane Smith,,,,,https://facebook.com/janesmith,RM1800,https://twitter.com/janesmith,RM2000,https://threads.net/@janesmith,RM2200,https://janesmith.blogspot.com,RM1500,MICRO,Female,"Technology;Education",Hijab,Malay,Kuala Lumpur,+60187654321,Includes 2 posts,Tika'
     ].join('\n');
 
     const blob = new Blob([templateData], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'kol_import_template.csv';
+    link.download = 'juta_kol_import_template.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -187,7 +231,7 @@ const Settings = () => {
 
     toast({
       title: 'Template Downloaded',
-      description: 'CSV template downloaded successfully. Use this format for importing KOLs.',
+      description: 'JUTA KOL CSV template downloaded successfully. Use this format for importing KOLs.',
       status: 'success',
       duration: 3000,
       isClosable: true,
@@ -329,39 +373,92 @@ const Settings = () => {
           });
         }
 
+        // Filter out empty or invalid records before processing
+        const validImportData = importData.filter(kolData => {
+          const name = kolData.name || kolData.Name || '';
+          const hasName = name.trim() !== '';
+          const hasAnyPlatform = (kolData.instagram || kolData.Instagram || kolData['IG Link'] || '').trim() !== '' ||
+                                (kolData.tiktok || kolData.TikTok || kolData['TIKTOK link'] || '').trim() !== '' ||
+                                (kolData.facebook || kolData.Facebook || '').trim() !== '' ||
+                                (kolData.twitter || kolData.Twitter || '').trim() !== '' ||
+                                (kolData.thread || kolData.Thread || '').trim() !== '' ||
+                                (kolData.blog || kolData.Blog || '').trim() !== '';
+          
+          return hasName && hasAnyPlatform;
+        });
+
         // Import data to database
         let successCount = 0;
         let errorCount = 0;
+        let skippedCount = 0;
         
-        for (let i = 0; i < importData.length; i++) {
-          const kolData = importData[i];
+        for (let i = 0; i < validImportData.length; i++) {
+          const kolData = validImportData[i];
           
           // Update progress
-          const progress = Math.round(((i + 1) / importData.length) * 100);
+          const progress = Math.round(((i + 1) / validImportData.length) * 100);
           setImportProgress(progress);
           
           try {
-            // Map CSV/JSON data to KOL format
+            // Map CSV/JSON data to KOL format - handle both old and new CSV formats
+            const instagramLink = kolData.instagram || kolData.Instagram || kolData['IG Link'] || '';
+            const tiktokLink = kolData.tiktok || kolData.TikTok || kolData['TIKTOK link'] || '';
+            const facebookLink = kolData.facebook || kolData.Facebook || '';
+            const twitterLink = kolData.twitter || kolData.Twitter || '';
+            const threadLink = kolData.thread || kolData.Thread || '';
+            const blogLink = kolData.blog || kolData.Blog || '';
+            
+            const instagramRate = parseRate(kolData.instagramRate || kolData.instagram_rate || kolData['Rate for IG'] || 0);
+            const tiktokRate = parseRate(kolData.tiktokRate || kolData.tiktok_rate || kolData['Rate for Tiktok'] || 0);
+            const facebookRate = parseRate(kolData.facebookRate || kolData.facebook_rate || kolData['Facebook Rate'] || 0);
+            const twitterRate = parseRate(kolData.twitterRate || kolData.twitter_rate || kolData['Twitter Rate'] || 0);
+            const threadRate = parseRate(kolData.threadRate || kolData.thread_rate || kolData['Thread Rate'] || 0);
+            const blogRate = parseRate(kolData.blogRate || kolData.blog_rate || kolData['Blog Rate'] || 0);
+            
+            // Calculate overall rate as the highest platform rate
+            const overallRate = Math.max(instagramRate, tiktokRate, facebookRate, twitterRate, threadRate, blogRate, parseRate(kolData.rate || kolData.Rate || 0));
+            
+            // Parse niches from various possible column names
+            let niches = [];
+            const nicheValue = kolData.niches || kolData.niche || kolData['Niche '] || kolData['Niche'] || '';
+            if (nicheValue && nicheValue.trim() !== '') {
+              if (Array.isArray(nicheValue)) {
+                niches = nicheValue;
+              } else {
+                // Split by semicolon, comma, or pipe, then trim and filter empty values
+                niches = nicheValue
+                  .split(/[;,|]/)
+                  .map(n => n.trim())
+                  .filter(n => n && n !== '');
+              }
+            }
+
             const mappedData = {
               name: kolData.name || kolData.Name || '',
-              instagram: kolData.instagram || kolData.Instagram || '',
-              tiktok: kolData.tiktok || kolData.TikTok || '',
-              facebook: kolData.facebook || kolData.Facebook || '',
-              twitter: kolData.twitter || kolData.Twitter || '',
-              thread: kolData.thread || kolData.Thread || '',
-              blog: kolData.blog || kolData.Blog || '',
-              rate: parseFloat(kolData.rate || kolData.Rate || 0),
+              instagram: instagramLink,
+              tiktok: tiktokLink,
+              facebook: facebookLink,
+              twitter: twitterLink,
+              thread: threadLink,
+              blog: blogLink,
+              rate: overallRate,
+              instagramRate: instagramRate,
+              tiktokRate: tiktokRate,
+              facebookRate: facebookRate,
+              twitterRate: twitterRate,
+              threadRate: threadRate,
+              blogRate: blogRate,
               tier: kolData.tier || kolData.Tier || 'Tier 3 (Emerging)',
               gender: kolData.gender || kolData.Gender || 'Other',
-              hairStyle: kolData.hairStyle || kolData.hair_style || 'Free Hair',
+              hairStyle: formatHairStyle(kolData.hairStyle || kolData.hair_style || kolData['Hijab/Free Hair'] || 'Free Hair'),
               race: kolData.race || kolData.Race || 'Other',
               address: kolData.address || kolData.Address || 'Selangor',
-              contactNumber: kolData.contactNumber || kolData.contact_number || kolData.contact || '',
-              rateDetails: kolData.rateDetails || kolData.rate_details || '',
+              contactNumber: kolData.contactNumber || kolData.contact_number || kolData.contact || kolData['Contact Number'] || '',
+              rateDetails: kolData.rateDetails || kolData.rate_details || kolData['Date Rates & Details'] || '',
               pic: kolData.pic || kolData.PIC || 'Amir',
-              kolType: kolData.kolType || kolData.kol_type || 'social-media',
+              kolType: determineKOLType(instagramLink, tiktokLink, facebookLink, twitterLink, threadLink, blogLink),
               notes: kolData.notes || kolData.Notes || '',
-              niches: kolData.niches ? (Array.isArray(kolData.niches) ? kolData.niches : kolData.niches.split(';')) : []
+              niches: niches
             };
 
             // Send to API
@@ -388,9 +485,12 @@ const Settings = () => {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
 
+        // Calculate skipped count
+        skippedCount = importData.length - validImportData.length;
+
         toast({
           title: 'Import Complete',
-          description: `Successfully imported ${successCount} KOLs from ${file.name}. ${errorCount > 0 ? `${errorCount} records failed.` : ''}`,
+          description: `Successfully imported ${successCount} KOLs from ${file.name}. ${skippedCount > 0 ? `${skippedCount} empty records skipped.` : ''} ${errorCount > 0 ? `${errorCount} records failed.` : ''}`,
           status: successCount > 0 ? 'success' : 'warning',
           duration: 5000,
           isClosable: true,
@@ -449,8 +549,8 @@ const Settings = () => {
         mimeType = 'application/json';
         fileName = `kol_export_${new Date().toISOString().split('T')[0]}.json`;
       } else if (format === 'csv') {
-        // Convert to CSV
-        const headers = ['id', 'name', 'instagram', 'tiktok', 'facebook', 'twitter', 'thread', 'blog', 'rate', 'tier', 'gender', 'niches', 'race', 'address', 'contactNumber', 'kolType'];
+        // Convert to CSV with platform-specific rates
+        const headers = ['id', 'name', 'instagram', 'instagramRate', 'tiktok', 'tiktokRate', 'facebook', 'facebookRate', 'twitter', 'twitterRate', 'thread', 'threadRate', 'blog', 'blogRate', 'rate', 'tier', 'gender', 'niches', 'race', 'address', 'contactNumber', 'kolType'];
         const csvRows = [headers.join(',')];
         
         kols.forEach(kol => {
@@ -473,7 +573,7 @@ const Settings = () => {
         fileName = `kol_export_${new Date().toISOString().split('T')[0]}.csv`;
       } else if (format === 'xlsx') {
         // For Excel format, we'll export as CSV since creating actual XLSX requires a library
-        const headers = ['ID', 'Name', 'Instagram', 'TikTok', 'Facebook', 'Twitter', 'Thread', 'Blog', 'Rate', 'Tier', 'Gender', 'Niches', 'Race', 'Address', 'Contact Number', 'KOL Type'];
+        const headers = ['ID', 'Name', 'Instagram', 'Instagram Rate', 'TikTok', 'TikTok Rate', 'Facebook', 'Facebook Rate', 'Twitter', 'Twitter Rate', 'Thread', 'Thread Rate', 'Blog', 'Blog Rate', 'Overall Rate', 'Tier', 'Gender', 'Niches', 'Race', 'Address', 'Contact Number', 'KOL Type'];
         const csvRows = [headers.join(',')];
         
         kols.forEach(kol => {
@@ -481,11 +581,17 @@ const Settings = () => {
             kol.id,
             kol.name,
             kol.instagram,
+            kol.instagramRate || 0,
             kol.tiktok,
+            kol.tiktokRate || 0,
             kol.facebook,
+            kol.facebookRate || 0,
             kol.twitter,
+            kol.twitterRate || 0,
             kol.thread,
+            kol.threadRate || 0,
             kol.blog,
+            kol.blogRate || 0,
             kol.rate,
             kol.tier,
             kol.gender,
@@ -784,10 +890,11 @@ const Settings = () => {
                         <Alert status="info" borderRadius="lg" fontSize="sm">
                           <AlertIcon />
                           <Box>
-                            <AlertTitle fontSize="sm">CSV Format:</AlertTitle>
+                            <AlertTitle fontSize="sm">JUTA CSV Format:</AlertTitle>
                             <AlertDescription fontSize="xs">
-                              Use semicolons (;) to separate multiple niches. Include quotes around values with commas. 
-                              Download template for exact column names and format.
+                              Supports the JUTA database format with columns: Name, IG Link, Rate for IG, TIKTOK link, Rate for Tiktok, Tier, Gender, Niche, Hijab/Free Hair, Race, Address, Contact Number, Date Rates & Details, PIC. 
+                              Rate values can include "RM" prefix and commas (e.g., "RM2,000.00"). 
+                              Multiple niches can be separated by semicolons (e.g., "Fashion & Beauty;Lifestyle").
                             </AlertDescription>
                           </Box>
                         </Alert>

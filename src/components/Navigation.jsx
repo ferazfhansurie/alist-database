@@ -190,10 +190,19 @@ const Navigation = () => {
         zIndex={100}
         backdropFilter="blur(20px)"
         WebkitBackdropFilter="blur(20px)"
-        bg={bgColor}
-        borderBottom="1px solid"
-        borderColor={borderColor}
-        boxShadow="0 4px 30px rgba(0, 0, 0, 0.1)"
+        bgGradient="linear(to-r, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9))"
+        borderBottom="2px solid"
+        borderColor="rgba(255, 255, 255, 0.3)"
+        boxShadow="0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)"
+        _before={{
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          bgGradient: 'linear(to-r, red.400, pink.500, purple.500, blue.500)',
+        }}
       >
         <Container maxW="container.xl" px={4}>
           <Flex justify="space-between" align="center" py={3}>
@@ -235,21 +244,25 @@ const Navigation = () => {
                       onClick={() => navigate(item.path)}
                       position="relative"
                       px={4}
-                      py={2}
+                      py={3}
                       h="auto"
                       minW="auto"
-                      borderRadius="xl"
-                      bg={isActive(item.path) ? 'rgba(220, 38, 38, 0.1)' : 'transparent'}
-                      color={isActive(item.path) ? 'red.600' : 'gray.600'}
+                      borderRadius="2xl"
+                      bgGradient={isActive(item.path) ? 'linear(to-br, red.50, pink.100)' : 'transparent'}
+                      color={isActive(item.path) ? 'red.700' : 'gray.600'}
+                      border={isActive(item.path) ? '2px solid' : '2px solid transparent'}
+                      borderColor={isActive(item.path) ? 'red.200' : 'transparent'}
+                      boxShadow={isActive(item.path) ? '0 4px 12px rgba(220, 38, 38, 0.15)' : 'none'}
                       _hover={{
-                        bg: isActive(item.path) ? 'rgba(220, 38, 38, 0.15)' : 'rgba(220, 38, 38, 0.05)',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 20px rgba(220, 38, 38, 0.15)'
+                        bgGradient: isActive(item.path) ? 'linear(to-br, red.100, pink.200)' : 'linear(to-br, red.50, pink.50)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 8px 24px rgba(220, 38, 38, 0.2)',
+                        borderColor: 'red.300'
                       }}
                       _active={{
                         transform: 'translateY(0)'
                       }}
-                      transition="all 0.2s ease"
+                      transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                       className="hover-lift"
                     >
                       <VStack spacing={1} align="center">
@@ -302,22 +315,26 @@ const Navigation = () => {
                   size="sm"
                   colorScheme="red"
                   variant="solid"
-                  borderRadius="xl"
-                  px={4}
-                  py={2}
+                  borderRadius="2xl"
+                  px={5}
+                  py={3}
                   h="auto"
                   fontSize="sm"
-                  fontWeight="600"
+                  fontWeight="700"
                   letterSpacing="tight"
-                  boxShadow="0 4px 15px rgba(220, 38, 38, 0.3)"
+                  bgGradient="linear(to-r, red.500, pink.500)"
+                  boxShadow="0 8px 24px rgba(220, 38, 38, 0.4), 0 4px 12px rgba(220, 38, 38, 0.2)"
+                  border="2px solid"
+                  borderColor="white"
                   _hover={{
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)'
+                    transform: 'translateY(-3px) scale(1.05)',
+                    boxShadow: '0 12px 32px rgba(220, 38, 38, 0.5), 0 8px 16px rgba(220, 38, 38, 0.3)',
+                    bgGradient: 'linear(to-r, red.600, pink.600)'
                   }}
                   _active={{
-                    transform: 'translateY(0)'
+                    transform: 'translateY(-1px) scale(1.02)'
                   }}
-                  transition="all 0.2s ease"
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                   className="hover-lift"
                   onClick={onTypeSelectOpen}
                 >
@@ -336,17 +353,21 @@ const Navigation = () => {
                   size="sm"
                   colorScheme="red"
                   variant="solid"
-                  borderRadius="xl"
-                  icon={<Plus size={16} />}
-                  boxShadow="0 4px 15px rgba(220, 38, 38, 0.3)"
+                  borderRadius="2xl"
+                  icon={<Plus size={18} />}
+                  bgGradient="linear(to-r, red.500, pink.500)"
+                  boxShadow="0 8px 24px rgba(220, 38, 38, 0.4), 0 4px 12px rgba(220, 38, 38, 0.2)"
+                  border="2px solid"
+                  borderColor="white"
                   _hover={{
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 6px 20px rgba(220, 38, 38, 0.4)'
+                    transform: 'translateY(-3px) scale(1.1)',
+                    boxShadow: '0 12px 32px rgba(220, 38, 38, 0.5), 0 8px 16px rgba(220, 38, 38, 0.3)',
+                    bgGradient: 'linear(to-r, red.600, pink.600)'
                   }}
                   _active={{
-                    transform: 'translateY(0)'
+                    transform: 'translateY(-1px) scale(1.05)'
                   }}
-                  transition="all 0.2s ease"
+                  transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                   onClick={onTypeSelectOpen}
                   aria-label="Add KOL"
                 />

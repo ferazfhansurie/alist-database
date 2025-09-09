@@ -62,7 +62,7 @@ async function initializeDatabase() {
 
     await pool.query(`
       DO $$ BEGIN
-        CREATE TYPE tier AS ENUM ('Tier 1 (Premium)', 'Tier 2 (Mid-tier)', 'Tier 3 (Emerging)', 'Tier 4 (Micro)');
+        CREATE TYPE tier AS ENUM ('Tier 1 (Premium)', 'Tier 2 (Mid-tier)', 'Tier 3 (Emerging)', 'Tier 4 (Micro)', 'NANO', 'MICRO', 'MACRO', 'MEGA', 'MID-TIER');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
@@ -78,7 +78,7 @@ async function initializeDatabase() {
 
     await pool.query(`
       DO $$ BEGIN
-        CREATE TYPE hair_style AS ENUM ('Hijab', 'Free Hair');
+        CREATE TYPE hair_style AS ENUM ('Hijab', 'Free Hair', 'Not Related');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
@@ -127,6 +127,12 @@ async function initializeDatabase() {
         thread VARCHAR(500),
         blog VARCHAR(500),
         rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+        instagram_rate DECIMAL(10,2) DEFAULT 0,
+        tiktok_rate DECIMAL(10,2) DEFAULT 0,
+        facebook_rate DECIMAL(10,2) DEFAULT 0,
+        twitter_rate DECIMAL(10,2) DEFAULT 0,
+        thread_rate DECIMAL(10,2) DEFAULT 0,
+        blog_rate DECIMAL(10,2) DEFAULT 0,
         tier tier NOT NULL DEFAULT 'Tier 3 (Emerging)',
         gender gender NOT NULL DEFAULT 'Other',
         hair_style hair_style NOT NULL DEFAULT 'Free Hair',
@@ -142,6 +148,17 @@ async function initializeDatabase() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Add platform-specific rate columns to existing kols table (migration)
+    await pool.query(`
+      ALTER TABLE kols 
+      ADD COLUMN IF NOT EXISTS instagram_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS tiktok_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS facebook_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS twitter_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS thread_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS blog_rate DECIMAL(10,2) DEFAULT 0;
     `);
 
     await pool.query(`
@@ -174,7 +191,14 @@ async function initializeDatabase() {
         ('News & Politics'),
         ('Religion & Spirituality'),
         ('Pet & Animal'),
-        ('Home & Garden')
+        ('Home & Garden'),
+        ('GENERAL'),
+        ('BEAUTY'),
+        ('COMEDY/ TREND'),
+        ('PROFESSIONAL/ MEDICAL'),
+        ('EDUCATION'),
+        ('SKINCARE'),
+        ('AUTOMOTIVE')
       ON CONFLICT (name) DO NOTHING;
     `);
 
@@ -299,13 +323,26 @@ app.get('/api/kols', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        k.*,
+        k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
+        k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
+        k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+        k.created_at, k.updated_at,
+        k.instagram_rate as "instagramRate",
+        k.tiktok_rate as "tiktokRate",
+        k.facebook_rate as "facebookRate",
+        k.twitter_rate as "twitterRate",
+        k.thread_rate as "threadRate",
+        k.blog_rate as "blogRate",
         ARRAY_AGG(n.name) as niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
       LEFT JOIN niches n ON kn.niche_id = n.id
       WHERE k.is_active = true
-      GROUP BY k.id
+      GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
+               k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
+               k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+               k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
+               k.twitter_rate, k.thread_rate, k.blog_rate
       ORDER BY k.created_at DESC
     `);
     
@@ -327,13 +364,26 @@ app.get('/api/kols/type/:type', async (req, res) => {
     const { type } = req.params;
     const result = await pool.query(`
       SELECT 
-        k.*,
+        k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
+        k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
+        k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+        k.created_at, k.updated_at,
+        k.instagram_rate as "instagramRate",
+        k.tiktok_rate as "tiktokRate",
+        k.facebook_rate as "facebookRate",
+        k.twitter_rate as "twitterRate",
+        k.thread_rate as "threadRate",
+        k.blog_rate as "blogRate",
         ARRAY_AGG(n.name) as niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
       LEFT JOIN niches n ON kn.niche_id = n.id
       WHERE k.kol_type = $1 AND k.is_active = true
-      GROUP BY k.id
+      GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
+               k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
+               k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+               k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
+               k.twitter_rate, k.thread_rate, k.blog_rate
       ORDER BY k.created_at DESC
     `, [type]);
     
@@ -341,7 +391,6 @@ app.get('/api/kols/type/:type', async (req, res) => {
       ...row,
       niches: row.niches.filter(niche => niche !== null)
     }));
-    
     res.json(kols);
   } catch (error) {
     console.error('Error fetching KOLs by type:', error);
@@ -384,13 +433,16 @@ app.post('/api/kols', async (req, res) => {
     const kolResult = await client.query(`
       INSERT INTO kols (
         name, instagram, tiktok, facebook, twitter, thread, blog,
-        rate, tier, gender, hair_style, race, address, contact_number,
+        rate, instagram_rate, tiktok_rate, facebook_rate, twitter_rate, thread_rate, blog_rate,
+        tier, gender, hair_style, race, address, contact_number,
         rate_details, pic, kol_type, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
       RETURNING *
     `, [
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
       kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
+      kolData.instagramRate || 0, kolData.tiktokRate || 0, kolData.facebookRate || 0,
+      kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0,
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
       kolData.pic, kolData.kolType, kolData.notes
@@ -432,6 +484,12 @@ app.post('/api/kols', async (req, res) => {
     const completeKOL = await pool.query(`
       SELECT 
         k.*,
+        k.instagram_rate as "instagramRate",
+        k.tiktok_rate as "tiktokRate",
+        k.facebook_rate as "facebookRate",
+        k.twitter_rate as "twitterRate",
+        k.thread_rate as "threadRate",
+        k.blog_rate as "blogRate",
         ARRAY_AGG(n.name) as niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
@@ -457,6 +515,12 @@ app.get('/api/kols/:id', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         k.*,
+        k.instagram_rate as "instagramRate",
+        k.tiktok_rate as "tiktokRate",
+        k.facebook_rate as "facebookRate",
+        k.twitter_rate as "twitterRate",
+        k.thread_rate as "threadRate",
+        k.blog_rate as "blogRate",
         ARRAY_AGG(n.name) as niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
@@ -493,14 +557,18 @@ app.put('/api/kols/:id', async (req, res) => {
       UPDATE kols SET
         name = $1, instagram = $2, tiktok = $3, facebook = $4,
         twitter = $5, thread = $6, blog = $7, rate = $8,
-        tier = $9, gender = $10, hair_style = $11, race = $12,
-        address = $13, contact_number = $14, rate_details = $15,
-        pic = $16, kol_type = $17, notes = $18, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $19
+        instagram_rate = $9, tiktok_rate = $10, facebook_rate = $11,
+        twitter_rate = $12, thread_rate = $13, blog_rate = $14,
+        tier = $15, gender = $16, hair_style = $17, race = $18,
+        address = $19, contact_number = $20, rate_details = $21,
+        pic = $22, kol_type = $23, notes = $24, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $25
       RETURNING *
     `, [
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
       kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
+      kolData.instagramRate || 0, kolData.tiktokRate || 0, kolData.facebookRate || 0,
+      kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0,
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
       kolData.pic, kolData.kolType, kolData.notes, id
@@ -548,6 +616,12 @@ app.put('/api/kols/:id', async (req, res) => {
     const completeKOL = await pool.query(`
       SELECT 
         k.*,
+        k.instagram_rate as "instagramRate",
+        k.tiktok_rate as "tiktokRate",
+        k.facebook_rate as "facebookRate",
+        k.twitter_rate as "twitterRate",
+        k.thread_rate as "threadRate",
+        k.blog_rate as "blogRate",
         ARRAY_AGG(n.name) as niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
@@ -805,6 +879,49 @@ app.delete('/api/users/:id', async (req, res) => {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Debug endpoint to check database structure
+app.get('/api/debug/kol-structure', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'kols' 
+      AND column_name LIKE '%rate%'
+      ORDER BY column_name
+    `);
+    
+    res.json({
+      rate_columns: result.rows,
+      message: 'Database structure for rate columns'
+    });
+  } catch (error) {
+    console.error('Error checking database structure:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Debug endpoint to check a sample KOL
+app.get('/api/debug/sample-kol', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, name, rate, instagram_rate, tiktok_rate, facebook_rate, 
+        twitter_rate, thread_rate, blog_rate, kol_type
+      FROM kols 
+      WHERE is_active = true 
+      LIMIT 1
+    `);
+    
+    res.json({
+      sample_kol: result.rows[0] || 'No KOLs found',
+      message: 'Sample KOL with rate columns'
+    });
+  } catch (error) {
+    console.error('Error fetching sample KOL:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Setup initial user

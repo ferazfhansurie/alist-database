@@ -11,7 +11,12 @@ export const TIERS = [
   'Tier 1 (Premium)',
   'Tier 2 (Mid-tier)',
   'Tier 3 (Emerging)',
-  'Tier 4 (Micro)'
+  'Tier 4 (Micro)',
+  'NANO',
+  'MICRO',
+  'MACRO',
+  'MEGA',
+  'MID-TIER'
 ];
 
 export const GENDERS = [
@@ -40,12 +45,20 @@ export const NICHES = [
   'News & Politics',
   'Religion & Spirituality',
   'Pet & Animal',
-  'Home & Garden'
+  'Home & Garden',
+  'GENERAL',
+  'BEAUTY',
+  'COMEDY/ TREND',
+  'PROFESSIONAL/ MEDICAL',
+  'EDUCATION',
+  'SKINCARE',
+  'AUTOMOTIVE'
 ];
 
 export const HAIR_STYLES = [
   'Hijab',
-  'Free Hair'
+  'Free Hair',
+  'Not Related'
 ];
 
 export const RACES = [
@@ -95,6 +108,12 @@ export class KOLRecord {
     this.thread = data.thread || '';
     this.blog = data.blog || '';
     this.rate = data.rate || 0;
+    this.instagramRate = data.instagramRate || data.instagram_rate || 0;
+    this.tiktokRate = data.tiktokRate || data.tiktok_rate || 0;
+    this.facebookRate = data.facebookRate || data.facebook_rate || 0;
+    this.twitterRate = data.twitterRate || data.twitter_rate || 0;
+    this.threadRate = data.threadRate || data.thread_rate || 0;
+    this.blogRate = data.blogRate || data.blog_rate || 0;
     this.tier = data.tier || TIERS[0];
     this.gender = data.gender || GENDERS[0];
     this.niches = data.niches || [];
@@ -147,6 +166,12 @@ export class KOLRecord {
       thread: this.thread,
       blog: this.blog,
       rate: this.rate,
+      instagramRate: this.instagramRate,
+      tiktokRate: this.tiktokRate,
+      facebookRate: this.facebookRate,
+      twitterRate: this.twitterRate,
+      threadRate: this.threadRate,
+      blogRate: this.blogRate,
       tier: this.tier,
       gender: this.gender,
       niches: this.niches,

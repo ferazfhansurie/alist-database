@@ -48,9 +48,60 @@ const MotionBox = motion(Box);
 const Dashboard = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const { kols, stats, loading, error, createKOL } = useDatabase();
+  const { kols, stats, loading, error, createKOL, loadKOLs } = useDatabase();
+  const [actualStats, setActualStats] = useState({
+    total: 0,
+    socialMedia: 0,
+    twitterThread: 0,
+    blogger: 0,
+    productionTalent: 0,
+    totalValue: 0,
+    averageRate: 0
+  });
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   const [selectedKOLType, setSelectedKOLType] = useState(null);
+
+  // Calculate actual stats from loaded KOLs
+  useEffect(() => {
+    if (kols && kols.length > 0) {
+      const socialMediaKOLs = kols.filter(kol => 
+        kol.kolType === 'social-media' || 
+        kol.kolType === 'instagram' || 
+        kol.kolType === 'tiktok' ||
+        kol.instagram || 
+        kol.tiktok || 
+        kol.facebook
+      );
+      
+      const twitterThreadKOLs = kols.filter(kol => 
+        kol.kolType === 'twitter-thread' || 
+        kol.twitter || 
+        kol.thread
+      );
+      
+      const bloggerKOLs = kols.filter(kol => 
+        kol.kolType === 'blogger' || 
+        kol.blog
+      );
+      
+      const productionTalentKOLs = kols.filter(kol => 
+        kol.kolType === 'production-talent'
+      );
+      
+      const totalValue = kols.reduce((sum, kol) => sum + (parseFloat(kol.rate) || 0), 0);
+      const averageRate = kols.length > 0 ? totalValue / kols.length : 0;
+      
+      setActualStats({
+        total: kols.length,
+        socialMedia: socialMediaKOLs.length,
+        twitterThread: twitterThreadKOLs.length,
+        blogger: bloggerKOLs.length,
+        productionTalent: productionTalentKOLs.length,
+        totalValue,
+        averageRate
+      });
+    }
+  }, [kols]);
 
   const handleQuickAction = (kolType) => {
     setSelectedKOLType(kolType);
@@ -60,6 +111,9 @@ const Dashboard = () => {
   const handleSave = async (kolData) => {
     try {
       await createKOL(kolData);
+      
+      // Reload data to get updated stats
+      await loadKOLs();
       
       toast({
         title: 'Success!',
@@ -146,9 +200,11 @@ const Dashboard = () => {
   const statCards = [
     {
       label: 'Total KOLs',
-      value: stats.total,
+      value: actualStats.total,
       icon: Users,
       color: 'red.500',
+      gradient: 'linear(to-br, red.400, red.600)',
+      bgGradient: 'linear(to-br, red.50, red.100)',
       path: '/',
       status: 'ACTIVE',
       statusColor: 'green',
@@ -156,9 +212,11 @@ const Dashboard = () => {
     },
     {
       label: 'Social Media',
-      value: stats.socialMedia,
+      value: actualStats.socialMedia,
       icon: Instagram,
-      color: 'red.400',
+      color: 'pink.500',
+      gradient: 'linear(to-br, pink.400, purple.600)',
+      bgGradient: 'linear(to-br, pink.50, purple.100)',
       path: '/social-media',
       status: 'GROWING',
       statusColor: 'green',
@@ -166,9 +224,11 @@ const Dashboard = () => {
     },
     {
       label: 'Twitter/Thread',
-      value: stats.twitterThread,
+      value: actualStats.twitterThread,
       icon: Twitter,
-      color: 'red.300',
+      color: 'blue.500',
+      gradient: 'linear(to-br, blue.400, cyan.600)',
+      bgGradient: 'linear(to-br, blue.50, cyan.100)',
       path: '/twitter-thread',
       status: 'ACTIVE',
       statusColor: 'green',
@@ -176,9 +236,11 @@ const Dashboard = () => {
     },
     {
       label: 'Bloggers',
-      value: stats.blogger,
+      value: actualStats.blogger,
       icon: FileText,
-      color: 'red.600',
+      color: 'orange.500',
+      gradient: 'linear(to-br, orange.400, red.600)',
+      bgGradient: 'linear(to-br, orange.50, red.100)',
       path: '/blogger',
       status: 'DIVERSE',
       statusColor: 'blue',
@@ -186,9 +248,11 @@ const Dashboard = () => {
     },
     {
       label: 'Production Talent',
-      value: stats.productionTalent,
+      value: actualStats.productionTalent,
       icon: TrendingUp,
-      color: 'red.700',
+      color: 'purple.500',
+      gradient: 'linear(to-br, purple.400, pink.600)',
+      bgGradient: 'linear(to-br, purple.50, pink.100)',
       path: '/production-talent',
       status: 'PREMIUM',
       statusColor: 'purple',
@@ -196,9 +260,11 @@ const Dashboard = () => {
     },
     {
       label: 'Avg Rate (RM)',
-      value: stats.averageRate,
+      value: actualStats.averageRate,
       icon: DollarSign,
-      color: 'red.500',
+      color: 'green.500',
+      gradient: 'linear(to-br, green.400, emerald.600)',
+      bgGradient: 'linear(to-br, green.100, emerald.200)',
       path: '/',
       status: 'COMPETITIVE',
       statusColor: 'green',
@@ -243,9 +309,20 @@ const Dashboard = () => {
   return (
     <Box
       minH="100vh"
-      bgGradient="linear(to-br, gray.50, red.50, white)"
+      bgGradient="linear(to-br, purple.50, pink.50, red.50, orange.50)"
       py={{ base: 2, md: 4 }}
       px={{ base: 1, md: 2 }}
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        bgGradient: 'radial(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%), radial(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%)',
+        pointerEvents: 'none'
+      }}
     >
       <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
         <MotionBox
@@ -266,19 +343,19 @@ const Dashboard = () => {
                   transition={{ duration: 0.6, delay: index * 0.05 }}
                 >
                   <Box
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.100"
-                    borderRadius="xl"
-                    p={{ base: 3, md: 4 }}
-                    boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
+                    bgGradient={stat.bgGradient}
+                    border="2px solid"
+                    borderColor="white"
+                    borderRadius="2xl"
+                    p={{ base: 4, md: 5 }}
+                    boxShadow="0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)"
                     cursor="pointer"
                     onClick={() => navigate(stat.path)}
-                    transition="all 0.2s ease"
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                     _hover={{
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(220, 38, 38, 0.15)',
-                      borderColor: 'red.200',
+                      transform: 'translateY(-4px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)',
+                      borderColor: 'white',
                     }}
                     position="relative"
                     overflow="hidden"
@@ -288,11 +365,11 @@ const Dashboard = () => {
                       top: 0,
                       left: 0,
                       right: 0,
-                      height: '3px',
-                      background: stat.color,
+                      height: '4px',
+                      bgGradient: stat.gradient,
                       transform: 'scaleX(0)',
                       transformOrigin: 'left',
-                      transition: 'transform 0.3s ease'
+                      transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                     }}
                     _after={{
                       content: '""',
@@ -300,10 +377,10 @@ const Dashboard = () => {
                       top: 0,
                       right: 0,
                       bottom: 0,
-                      width: '3px',
-                      background: `linear-gradient(180deg, ${stat.color}20, transparent)`,
+                      width: '4px',
+                      bgGradient: `linear(180deg, ${stat.color}40, transparent)`,
                       opacity: 0,
-                      transition: 'opacity 0.3s ease'
+                      transition: 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                     }}
                     sx={{
                       '&:hover::before': {
@@ -317,11 +394,12 @@ const Dashboard = () => {
                     <VStack spacing={2} align="start">
                       <Flex justify="space-between" align="center" w="full">
                         <Circle 
-                          size="32px"
-                          bg={`${stat.color}10`} 
-                          color={stat.color}
+                          size="40px"
+                          bgGradient={stat.gradient}
+                          color="white"
+                          boxShadow="0 4px 12px rgba(0, 0, 0, 0.15)"
                         >
-                          <Icon as={stat.icon} boxSize={4} />
+                          <Icon as={stat.icon} boxSize={5} />
                         </Circle>
                         <Badge
                           colorScheme={stat.statusColor}
@@ -359,12 +437,23 @@ const Dashboard = () => {
             <Grid templateColumns={{ base: '1fr', lg: '1.5fr 1fr' }} gap={{ base: 3, md: 4 }}>
               {/* Recent KOLs */}
               <Box 
-                bg="white"
-                border="1px solid"
-                borderColor="gray.100"
-                p={{ base: 4, md: 5 }}
-                borderRadius="xl"
-                boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
+                bgGradient="linear(to-br, white, gray.50)"
+                border="2px solid"
+                borderColor="white"
+                p={{ base: 5, md: 6 }}
+                borderRadius="2xl"
+                boxShadow="0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)"
+                position="relative"
+                overflow="hidden"
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  bgGradient: 'linear(to-r, blue.400, purple.500, pink.500)',
+                }}
               >
                 <Flex justify="space-between" align="center" mb={4}>
                   <Text fontSize="md" color="gray.900" fontWeight="600">
@@ -398,24 +487,31 @@ const Dashboard = () => {
                       transition={{ duration: 0.4, delay: index * 0.05 }}
                     >
                       <Box
-                        bg="gray.50"
-                        p={3}
-                        borderRadius="lg"
-                        border="1px solid"
-                        borderColor="gray.100"
+                        bgGradient="linear(to-r, white, gray.50)"
+                        p={4}
+                        borderRadius="xl"
+                        border="2px solid"
+                        borderColor="white"
                         cursor="pointer"
                         onClick={() => navigate('/social-media')}
-                        transition="all 0.2s ease"
+                        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                        boxShadow="0 4px 12px rgba(0, 0, 0, 0.08)"
                         _hover={{
-                          bg: 'red.50',
+                          bgGradient: 'linear(to-r, red.50, pink.50)',
                           borderColor: 'red.200',
-                          transform: 'translateX(2px)'
+                          transform: 'translateX(4px) scale(1.02)',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
                         }}
                       >
                         <Flex justify="space-between" align="center">
                           <HStack spacing={3} align="center">
-                            <Circle size="32px" bg="red.100" color="red.600">
-                              <Text fontSize="xs" fontWeight="700">
+                            <Circle 
+                              size="40px" 
+                              bgGradient="linear(to-br, red.400, red.600)"
+                              color="white"
+                              boxShadow="0 4px 12px rgba(220, 38, 38, 0.3)"
+                            >
+                              <Text fontSize="sm" fontWeight="700">
                                 {kol.name.charAt(0)}
                               </Text>
                             </Circle>
@@ -461,12 +557,23 @@ const Dashboard = () => {
 
               {/* Quick Actions */}
               <Box 
-                bg="white"
-                border="1px solid"
-                borderColor="gray.100"
-                p={{ base: 4, md: 5 }}
-                borderRadius="xl"
-                boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
+                bgGradient="linear(to-br, white, gray.50)"
+                border="2px solid"
+                borderColor="white"
+                p={{ base: 5, md: 6 }}
+                borderRadius="2xl"
+                boxShadow="0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)"
+                position="relative"
+                overflow="hidden"
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  bgGradient: 'linear(to-r, green.400, blue.500, purple.500)',
+                }}
               >
                 <Text 
                   fontSize="md" 
@@ -490,26 +597,28 @@ const Dashboard = () => {
                           colorScheme="red"
                           variant="ghost"
                           size="sm"
-                          leftIcon={<IconComponent size={16} />}
+                          leftIcon={<IconComponent size={18} />}
                           onClick={() => handleQuickAction(action.kolType)}
                           justifyContent="start"
                           w="full"
                           h="auto"
-                          py={3}
-                          px={3}
-                          borderRadius="lg"
-                          fontWeight="500"
-                          bg="gray.50"
-                          border="1px solid"
-                          borderColor="gray.100"
+                          py={4}
+                          px={4}
+                          borderRadius="xl"
+                          fontWeight="600"
+                          bgGradient="linear(to-r, white, gray.50)"
+                          border="2px solid"
+                          borderColor="white"
                           color="gray.700"
+                          boxShadow="0 4px 12px rgba(0, 0, 0, 0.08)"
                           _hover={{
-                            bg: 'red.50',
+                            bgGradient: 'linear(to-r, red.50, pink.50)',
                             borderColor: 'red.200',
                             color: 'red.700',
-                            transform: 'translateY(-1px)'
+                            transform: 'translateY(-2px) scale(1.02)',
+                            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
                           }}
-                          transition="all 0.2s ease"
+                          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                         >
                           <VStack align="start" spacing={0} w="full">
                             <Text fontWeight="600" fontSize="sm">
@@ -540,12 +649,23 @@ const Dashboard = () => {
       >
         <ModalOverlay backdropFilter="blur(10px)" />
         <ModalContent 
-          bg="white"
-          border="1px solid"
-          borderColor="gray.100"
+          bgGradient="linear(to-br, white, gray.50)"
+          border="2px solid"
+          borderColor="white"
           borderRadius={{ base: "0", md: "2xl" }}
-          boxShadow="0 8px 32px rgba(0, 0, 0, 0.1)"
+          boxShadow="0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1)"
           m={{ base: 0, md: 4 }}
+          position="relative"
+          overflow="hidden"
+          _before={{
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            bgGradient: 'linear(to-r, red.400, pink.500, purple.500)',
+          }}
         >
           <ModalHeader color="red.600" fontWeight="700" px={{ base: 4, md: 6 }}>
             {getFormTitle()}

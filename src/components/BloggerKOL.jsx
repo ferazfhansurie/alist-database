@@ -741,15 +741,72 @@ const BloggerKOL = () => {
                           </HStack>
                         )}
                       </Td>
-                      <Td px={6} py={5}>
-                        <Text fontWeight="800" color="red.600" fontSize="lg" noOfLines={1}>
-                          RM {kol.rate.toLocaleString()}
-                        </Text>
-                        {kol.rateDetails && (
-                          <Text fontSize="sm" color="gray.500" mt={1} noOfLines={1}>
-                            {kol.rateDetails}
+                      <Td px={6} py={5} minW="250px">
+                        <VStack align="start" spacing={2}>
+                          <Text fontWeight="800" color="red.600" fontSize="md" mb={1}>
+                            Overall: RM {kol.rate?.toLocaleString() || '0'}
                           </Text>
-                        )}
+                          <VStack spacing={1} align="start" w="full">
+                            {parseFloat(kol.instagramRate) > 0 && (
+                              <HStack spacing={2} justify="space-between" w="full">
+                                <HStack spacing={1}>
+                                  <Text fontSize="xs" color="pink.600" fontWeight="600">📸 IG:</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.instagramRate).toLocaleString()}</Text>
+                              </HStack>
+                            )}
+                            {parseFloat(kol.tiktokRate) > 0 && (
+                              <HStack spacing={2} justify="space-between" w="full">
+                                <HStack spacing={1}>
+                                  <Text fontSize="xs" color="gray.600" fontWeight="600">🎵 TT:</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.tiktokRate).toLocaleString()}</Text>
+                              </HStack>
+                            )}
+                            {parseFloat(kol.facebookRate) > 0 && (
+                              <HStack spacing={2} justify="space-between" w="full">
+                                <HStack spacing={1}>
+                                  <Text fontSize="xs" color="blue.600" fontWeight="600">📘 FB:</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.facebookRate).toLocaleString()}</Text>
+                              </HStack>
+                            )}
+                            {parseFloat(kol.twitterRate) > 0 && (
+                              <HStack spacing={2} justify="space-between" w="full">
+                                <HStack spacing={1}>
+                                  <Text fontSize="xs" color="blue.500" fontWeight="600">🐦 TW:</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.twitterRate).toLocaleString()}</Text>
+                              </HStack>
+                            )}
+                            {parseFloat(kol.threadRate) > 0 && (
+                              <HStack spacing={2} justify="space-between" w="full">
+                                <HStack spacing={1}>
+                                  <Text fontSize="xs" color="purple.600" fontWeight="600">🧵 TH:</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.threadRate).toLocaleString()}</Text>
+                              </HStack>
+                            )}
+                            {parseFloat(kol.blogRate) > 0 && (
+                              <HStack spacing={2} justify="space-between" w="full">
+                                <HStack spacing={1}>
+                                  <Text fontSize="xs" color="orange.600" fontWeight="600">📝 Blog:</Text>
+                                </HStack>
+                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.blogRate).toLocaleString()}</Text>
+                              </HStack>
+                            )}
+                            {(parseFloat(kol.instagramRate) === 0 && parseFloat(kol.tiktokRate) === 0 && parseFloat(kol.facebookRate) === 0 && parseFloat(kol.twitterRate) === 0 && parseFloat(kol.threadRate) === 0 && parseFloat(kol.blogRate) === 0) && (
+                              <Text fontSize="xs" color="gray.400" fontStyle="italic">
+                                No platform rates set
+                              </Text>
+                            )}
+                          </VStack>
+                          {kol.rateDetails && (
+                            <Text fontSize="xs" color="gray.500" mt={1} wordBreak="break-word" whiteSpace="pre-wrap">
+                              {kol.rateDetails}
+                            </Text>
+                          )}
+                        </VStack>
                       </Td>
                       <Td px={6} py={5}>
                         <Badge 
