@@ -52,18 +52,21 @@ import {
 import { KOL_TYPES, TIERS, NICHES, STATES } from '../data/models';
 import KOLForm from './KOLForm';
 import { useDatabase } from '../contexts/DatabaseContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const MotionBox = motion(Box);
 
 // Memoized table row component to prevent unnecessary re-renders
-const KOLTableRow = memo(({ 
-  kol, 
-  onEdit, 
-  onView, 
-  onDelete, 
-  onOpenLink, 
-  getTierColor, 
-  formatDate 
+const KOLTableRow = memo(({
+  kol,
+  onEdit,
+  onView,
+  onDelete,
+  onOpenLink,
+  getTierColor,
+  formatDate,
+  canEdit,
+  canDelete
 }) => {
   // Memoize expensive calculations
   const instagramRate = useMemo(() => parseFloat(kol.instagramRate) || 0, [kol.instagramRate]);
@@ -461,20 +464,36 @@ const KOLTableRow = memo(({
 
     {/* Date */}
     <Td px={6} py={5}>
-      <HStack spacing={2}>
-        <Calendar size={14} color="#666" />
-        <Text fontSize="sm" fontWeight="600" noOfLines={1} color="gray.700">
-          {formatDate(kol.submission_date || kol.dateAdded || kol.createdAt)}
-        </Text>
-      </HStack>
+      <VStack align="start" spacing={2}>
+        <HStack spacing={2}>
+          <Calendar size={14} color="#666" />
+          <Text fontSize="xs" fontWeight="500" color="gray.500">
+            Added:
+          </Text>
+          <Text fontSize="sm" fontWeight="600" noOfLines={1} color="gray.700">
+            {formatDate(kol.submission_date || kol.dateAdded || kol.createdAt)}
+          </Text>
+        </HStack>
+        {kol.rate_updated_at && (
+          <HStack spacing={2}>
+            <Calendar size={14} color="#dc2626" />
+            <Text fontSize="xs" fontWeight="500" color="red.500">
+              Rate Updated:
+            </Text>
+            <Text fontSize="sm" fontWeight="600" noOfLines={1} color="red.700">
+              {formatDate(kol.rate_updated_at)}
+            </Text>
+          </HStack>
+        )}
+      </VStack>
     </Td>
 
     {/* Rate Details */}
     <Td px={6} py={5} minW="200px">
-      <Text 
-        fontSize="sm" 
-        color="gray.600" 
-        fontWeight="600" 
+      <Text
+        fontSize="sm"
+        color="gray.600"
+        fontWeight="600"
         wordBreak="break-word"
         whiteSpace="pre-wrap"
       >
@@ -516,36 +535,40 @@ const KOLTableRow = memo(({
           }}
           transition="all 0.2s ease"
         />
-        <IconButton
-          size="sm"
-          icon={<Edit size={16} />}
-          onClick={() => onEdit(kol)}
-          colorScheme="green"
-          variant="outline"
-          aria-label="Edit KOL"
-          borderRadius="lg"
-          _hover={{
-            bg: 'green.50',
-            transform: 'scale(1.1)',
-            borderColor: 'green.400'
-          }}
-          transition="all 0.2s ease"
-        />
-        <IconButton
-          size="sm"
-          icon={<Trash2 size={16} />}
-          onClick={() => onDelete(kol.id)}
-          colorScheme="red"
-          variant="outline"
-          aria-label="Delete KOL"
-          borderRadius="lg"
-          _hover={{
-            bg: 'red.50',
-            transform: 'scale(1.1)',
-            borderColor: 'red.400'
-          }}
-          transition="all 0.2s ease"
-        />
+        {canEdit && (
+          <IconButton
+            size="sm"
+            icon={<Edit size={16} />}
+            onClick={() => onEdit(kol)}
+            colorScheme="green"
+            variant="outline"
+            aria-label="Edit KOL"
+            borderRadius="lg"
+            _hover={{
+              bg: 'green.50',
+              transform: 'scale(1.1)',
+              borderColor: 'green.400'
+            }}
+            transition="all 0.2s ease"
+          />
+        )}
+        {canDelete && (
+          <IconButton
+            size="sm"
+            icon={<Trash2 size={16} />}
+            onClick={() => onDelete(kol.id)}
+            colorScheme="red"
+            variant="outline"
+            aria-label="Delete KOL"
+            borderRadius="lg"
+            _hover={{
+              bg: 'red.50',
+              transform: 'scale(1.1)',
+              borderColor: 'red.400'
+            }}
+            transition="all 0.2s ease"
+          />
+        )}
       </HStack>
     </Td>
   </Tr>
@@ -554,6 +577,7 @@ const KOLTableRow = memo(({
 
 const SocialMediaKOL = () => {
   const { loadKOLs, loadKOLsByType, createKOL, updateKOL, deleteKOL } = useDatabase();
+  const { canEdit, canDelete, canCopy } = useAuth();
   const [kolData, setKolData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTier, setSelectedTier] = useState('All Tiers');
@@ -859,6 +883,36 @@ const SocialMediaKOL = () => {
       bgGradient="linear(to-br, gray.50, red.50, white)"
       py={{ base: 2, md: 4 }}
       px={{ base: 1, md: 2 }}
+      // Prevent copy for viewers
+      sx={!canCopy() ? {
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        '& *': {
+          userSelect: 'none !important',
+          WebkitUserSelect: 'none !important',
+          MozUserSelect: 'none !important',
+          msUserSelect: 'none !important'
+        }
+      } : {}}
+      onCopy={(e) => {
+        if (!canCopy()) {
+          e.preventDefault();
+          toast({
+            title: 'Copy Disabled',
+            description: 'You do not have permission to copy content.',
+            status: 'warning',
+            duration: 3000,
+            isClosable: true,
+          });
+        }
+      }}
+      onCut={(e) => {
+        if (!canCopy()) {
+          e.preventDefault();
+        }
+      }}
     >
       <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
         <MotionBox
@@ -1371,6 +1425,8 @@ const SocialMediaKOL = () => {
                         onOpenLink={openLink}
                         getTierColor={getTierColor}
                         formatDate={formatDate}
+                        canEdit={canEdit()}
+                        canDelete={canDelete()}
                       />
                     ))
                   )}
@@ -1815,13 +1871,56 @@ const SocialMediaKOL = () => {
                         </Text>
                       </Box>
                     </SimpleGrid>
-                    
+
+                    {/* Date Information */}
+                    <Box mt={3} p={3} bg="rgba(220, 38, 38, 0.05)" borderRadius="lg">
+                      <VStack align="start" spacing={2}>
+                        <HStack spacing={2}>
+                          <Calendar size={14} color="#666" />
+                          <Text fontSize="xs" fontWeight="600" color="gray.600">Added:</Text>
+                          <Text fontSize="sm" fontWeight="600" color="gray.800">
+                            {formatDate(viewingKOL.submission_date || viewingKOL.createdAt)}
+                          </Text>
+                        </HStack>
+                        {viewingKOL.rate_updated_at && (
+                          <HStack spacing={2}>
+                            <Calendar size={14} color="#dc2626" />
+                            <Text fontSize="xs" fontWeight="600" color="red.600">Rate Updated:</Text>
+                            <Text fontSize="sm" fontWeight="600" color="red.700">
+                              {formatDate(viewingKOL.rate_updated_at)}
+                            </Text>
+                          </HStack>
+                        )}
+                      </VStack>
+                    </Box>
+
                     {viewingKOL.notes && (
                       <Box mt={3} p={3} bg="rgba(0, 0, 0, 0.05)" borderRadius="lg">
                         <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Notes</Text>
                         <Text fontSize="sm" color="gray.700" fontStyle="italic">
                           {viewingKOL.notes}
                         </Text>
+                      </Box>
+                    )}
+
+                    {/* Custom Fields */}
+                    {viewingKOL.custom_fields && Object.keys(viewingKOL.custom_fields).length > 0 && (
+                      <Box mt={3} p={3} bg="rgba(220, 38, 38, 0.05)" borderRadius="lg">
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={2}>Additional Information</Text>
+                        <SimpleGrid columns={2} spacing={2}>
+                          {Object.entries(viewingKOL.custom_fields).map(([key, value]) => (
+                            value && (
+                              <Box key={key}>
+                                <Text fontSize="xs" fontWeight="600" color="gray.600" textTransform="capitalize">
+                                  {key.replace(/_/g, ' ')}:
+                                </Text>
+                                <Text fontSize="sm" color="gray.800" fontWeight="600">
+                                  {value}
+                                </Text>
+                              </Box>
+                            )
+                          ))}
+                        </SimpleGrid>
                       </Box>
                     )}
                   </Box>

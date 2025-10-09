@@ -81,13 +81,86 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
+
+      const data = await response.json();
+      return { success: true, message: data.message };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to change password');
+    }
+  };
+
+  // Role-based access control helpers
+  const canEdit = () => {
+    if (!user) return false;
+    return user.role === 'admin' || user.role === 'editor';
+  };
+
+  const canView = () => {
+    if (!user) return false;
+    return user.role === 'admin' || user.role === 'editor' || user.role === 'viewer';
+  };
+
+  const canCopy = () => {
+    if (!user) return false;
+    // Viewers cannot copy data
+    return user.role === 'admin' || user.role === 'editor';
+  };
+
+  const canDelete = () => {
+    if (!user) return false;
+    // Only admins can delete
+    return user.role === 'admin';
+  };
+
+  const isViewer = () => {
+    if (!user) return false;
+    return user.role === 'viewer';
+  };
+
+  const isEditor = () => {
+    if (!user) return false;
+    return user.role === 'editor';
+  };
+
+  const isAdmin = () => {
+    if (!user) return false;
+    return user.role === 'admin';
+  };
+
   const value = {
     isAuthenticated,
     user,
     isLoading,
     login,
     register,
-    logout
+    logout,
+    changePassword,
+    // Role-based access control
+    canEdit,
+    canView,
+    canCopy,
+    canDelete,
+    isViewer,
+    isEditor,
+    isAdmin
   };
 
   return (

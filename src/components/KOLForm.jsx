@@ -62,12 +62,15 @@ const KOLForm = ({
     address: STATES[0],
     contactNumber: '',
     rateDetails: '',
+    rateUpdatedAt: new Date().toISOString().split('T')[0],
     pic: PICS[0],
     kolType: kolType,
-    notes: ''
+    notes: '',
+    customFields: {}
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customFieldConfigs, setCustomFieldConfigs] = useState([]);
   const toast = useToast();
 
   // Glassmorphism colors
@@ -77,9 +80,26 @@ const KOLForm = ({
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...initialData,
+        customFields: initialData.custom_fields || initialData.customFields || {}
+      });
     }
   }, [initialData]);
+
+  // Fetch custom field configurations
+  useEffect(() => {
+    const fetchCustomFields = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/custom-fields');
+        const data = await response.json();
+        setCustomFieldConfigs(data);
+      } catch (error) {
+        console.error('Error fetching custom fields:', error);
+      }
+    };
+    fetchCustomFields();
+  }, []);
 
   const handleInputChange = (field, value) => {
     // Handle platform fields - convert username to full URL
@@ -87,11 +107,21 @@ const KOLForm = ({
     if (['instagram', 'tiktok', 'facebook', 'twitter', 'thread'].includes(field)) {
       processedValue = constructPlatformURL(field, value);
     }
-    
+
     setFormData(prev => ({ ...prev, [field]: processedValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleCustomFieldChange = (fieldKey, value) => {
+    setFormData(prev => ({
+      ...prev,
+      customFields: {
+        ...prev.customFields,
+        [fieldKey]: value
+      }
+    }));
   };
 
   // Utility function to construct full URLs from usernames
@@ -240,9 +270,11 @@ const KOLForm = ({
           address: STATES[0],
           contactNumber: '',
           rateDetails: '',
+          rateUpdatedAt: new Date().toISOString().split('T')[0],
           pic: PICS[0],
           kolType: kolType,
-          notes: ''
+          notes: '',
+          customFields: {}
         });
       }
     } catch (error) {
@@ -677,6 +709,38 @@ const KOLForm = ({
                   </FormControl>
                 </Grid>
 
+                <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4} mt={4}>
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
+                      <HStack spacing={2}>
+                        <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
+                          <Calendar size={14} color="#dc2626" />
+                        </Box>
+                        <Text>Rate Last Updated</Text>
+                      </HStack>
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      backdropFilter="blur(15px)"
+                      border="1px solid"
+                      borderColor="rgba(220, 38, 38, 0.2)"
+                      borderRadius="lg"
+                      type="date"
+                      value={formData.rateUpdatedAt ? formData.rateUpdatedAt.split('T')[0] : ''}
+                      onChange={(e) => handleInputChange('rateUpdatedAt', e.target.value)}
+                      _focus={{
+                        borderColor: 'red.400',
+                        boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                        bg: 'rgba(255, 255, 255, 0.95)'
+                      }}
+                      _hover={{
+                        borderColor: 'red.300'
+                      }}
+                      transition="all 0.2s ease"
+                    />
+                  </FormControl>
+                </Grid>
+
                 <FormControl mt={4}>
                   <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Rate Details</FormLabel>
                   <Textarea
@@ -904,7 +968,7 @@ const KOLForm = ({
               </Box>
 
               {/* Notes */}
-              <Box 
+              <Box
                 bg="rgba(255, 255, 255, 0.1)"
                 backdropFilter="blur(10px)"
                 p={4}
@@ -936,6 +1000,103 @@ const KOLForm = ({
                   />
                 </FormControl>
               </Box>
+
+              {/* Custom Fields */}
+              {customFieldConfigs.length > 0 && (
+                <Box
+                  bg="rgba(255, 255, 255, 0.1)"
+                  backdropFilter="blur(10px)"
+                  p={4}
+                  borderRadius="xl"
+                  border="1px solid"
+                  borderColor="rgba(255, 255, 255, 0.1)"
+                >
+                  <Heading size="md" color="gray.700" mb={4} display="flex" alignItems="center">
+                    <Box p={2} borderRadius="lg" bg="rgba(220, 38, 38, 0.1)" mr={3}>
+                      <FileText size={18} color="#dc2626" />
+                    </Box>
+                    Additional Information
+                  </Heading>
+                  <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4}>
+                    {customFieldConfigs.map(config => (
+                      <FormControl key={config.field_key} isRequired={config.is_required}>
+                        <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
+                          {config.field_label}
+                          {config.is_required && <Text as="span" color="red.500" ml={1}>*</Text>}
+                        </FormLabel>
+                        {config.field_type === 'text' && (
+                          <Input
+                            bg="rgba(255, 255, 255, 0.8)"
+                            backdropFilter="blur(15px)"
+                            border="1px solid"
+                            borderColor="rgba(220, 38, 38, 0.2)"
+                            borderRadius="lg"
+                            placeholder={`Enter ${config.field_label.toLowerCase()}`}
+                            value={formData.customFields[config.field_key] || ''}
+                            onChange={(e) => handleCustomFieldChange(config.field_key, e.target.value)}
+                            _focus={{
+                              borderColor: 'red.400',
+                              boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                              bg: 'rgba(255, 255, 255, 0.95)'
+                            }}
+                            _hover={{
+                              borderColor: 'red.300'
+                            }}
+                            transition="all 0.2s ease"
+                          />
+                        )}
+                        {config.field_type === 'select' && (
+                          <Select
+                            bg="rgba(255, 255, 255, 0.8)"
+                            backdropFilter="blur(15px)"
+                            border="1px solid"
+                            borderColor="rgba(220, 38, 38, 0.2)"
+                            borderRadius="lg"
+                            value={formData.customFields[config.field_key] || ''}
+                            onChange={(e) => handleCustomFieldChange(config.field_key, e.target.value)}
+                            _focus={{
+                              borderColor: 'red.400',
+                              boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                              bg: 'rgba(255, 255, 255, 0.95)'
+                            }}
+                            _hover={{
+                              borderColor: 'red.300'
+                            }}
+                            transition="all 0.2s ease"
+                          >
+                            <option value="">Select {config.field_label.toLowerCase()}</option>
+                            {config.field_options && config.field_options.map(option => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </Select>
+                        )}
+                        {config.field_type === 'textarea' && (
+                          <Textarea
+                            bg="rgba(255, 255, 255, 0.8)"
+                            backdropFilter="blur(15px)"
+                            border="1px solid"
+                            borderColor="rgba(220, 38, 38, 0.2)"
+                            borderRadius="lg"
+                            placeholder={`Enter ${config.field_label.toLowerCase()}`}
+                            value={formData.customFields[config.field_key] || ''}
+                            onChange={(e) => handleCustomFieldChange(config.field_key, e.target.value)}
+                            rows={3}
+                            _focus={{
+                              borderColor: 'red.400',
+                              boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                              bg: 'rgba(255, 255, 255, 0.95)'
+                            }}
+                            _hover={{
+                              borderColor: 'red.300'
+                            }}
+                            transition="all 0.2s ease"
+                          />
+                        )}
+                      </FormControl>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
 
               {/* Action Buttons */}
               <HStack spacing={4} justify="center" pt={2}>

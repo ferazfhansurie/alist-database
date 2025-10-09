@@ -68,7 +68,8 @@ import {
   MoreVertical,
   Search,
   RefreshCw,
-  Archive
+  Archive,
+  Sliders
 } from 'lucide-react';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -90,12 +91,24 @@ const Settings = () => {
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const fileInputRef = useRef(null);
-  
+
+  // Custom Fields State
+  const [customFields, setCustomFields] = useState([]);
+  const [editingField, setEditingField] = useState(null);
+  const [customFieldForm, setCustomFieldForm] = useState({
+    fieldKey: '',
+    fieldLabel: '',
+    fieldType: 'text',
+    isRequired: false,
+    displayOrder: 0
+  });
+
   const toast = useToast();
   const { isOpen: isAddUserOpen, onOpen: onAddUserOpen, onClose: onAddUserClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const { isOpen: isCustomFieldOpen, onOpen: onCustomFieldOpen, onClose: onCustomFieldClose } = useDisclosure();
   const [userToDelete, setUserToDelete] = useState(null);
-  
+
   const { kols, createKOL, refreshData } = useDatabase();
   const { user: currentUser } = useAuth();
 
@@ -131,7 +144,22 @@ const Settings = () => {
 
   useEffect(() => {
     loadUsers();
+    loadCustomFields();
   }, [toast]);
+
+  // Load custom fields from API
+  const loadCustomFields = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/custom-fields');
+      if (!response.ok) {
+        throw new Error('Failed to fetch custom fields');
+      }
+      const data = await response.json();
+      setCustomFields(data);
+    } catch (error) {
+      console.error('Error loading custom fields:', error);
+    }
+  };
 
 
 
@@ -668,6 +696,114 @@ const Settings = () => {
     return status === 'active' ? 'green' : 'gray';
   };
 
+  // Custom Field Handlers
+  const handleAddCustomField = () => {
+    setEditingField(null);
+    setCustomFieldForm({
+      fieldKey: '',
+      fieldLabel: '',
+      fieldType: 'text',
+      isRequired: false,
+      displayOrder: 0
+    });
+    onCustomFieldOpen();
+  };
+
+  const handleEditCustomField = (field) => {
+    setEditingField(field);
+    setCustomFieldForm({
+      fieldKey: field.field_key,
+      fieldLabel: field.field_label,
+      fieldType: field.field_type,
+      isRequired: field.is_required,
+      displayOrder: field.display_order
+    });
+    onCustomFieldOpen();
+  };
+
+  const handleSaveCustomField = async () => {
+    if (!customFieldForm.fieldKey || !customFieldForm.fieldLabel || !customFieldForm.fieldType) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      const url = editingField
+        ? `http://localhost:3001/api/custom-fields/${editingField.id}`
+        : 'http://localhost:3001/api/custom-fields';
+
+      const method = editingField ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customFieldForm),
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: `Custom field ${editingField ? 'updated' : 'created'} successfully`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        loadCustomFields();
+        onCustomFieldClose();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save custom field');
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleDeleteCustomField = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this custom field?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/custom-fields/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Custom field deleted successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        loadCustomFields();
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete custom field',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <Container maxW="container.xl" py={8} px={4}>
       <MotionBox
@@ -716,6 +852,20 @@ const Settings = () => {
                 <HStack spacing={2}>
                   <Database size={18} />
                   <Text>Data Management</Text>
+                </HStack>
+              </Tab>
+              <Tab
+                _selected={{
+                  bg: 'red.500',
+                  color: 'white',
+                  borderRadius: 'lg'
+                }}
+                borderRadius="lg"
+                fontWeight="600"
+              >
+                <HStack spacing={2}>
+                  <Sliders size={18} />
+                  <Text>Custom Fields</Text>
                 </HStack>
               </Tab>
             </TabList>
@@ -992,6 +1142,118 @@ const Settings = () => {
                 </VStack>
               </TabPanel>
 
+              {/* Custom Fields Tab */}
+              <TabPanel px={0}>
+                <VStack spacing={6} align="stretch">
+                  <Card
+                    bg={cardBg}
+                    backdropFilter="blur(20px)"
+                    border="1px solid"
+                    borderColor="rgba(220, 38, 38, 0.1)"
+                    borderRadius="xl"
+                  >
+                    <CardHeader>
+                      <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
+                        <Heading size="md" color="red.600">Custom Fields Configuration</Heading>
+                        <Button
+                          leftIcon={<UserPlus size={16} />}
+                          colorScheme="red"
+                          size="sm"
+                          onClick={handleAddCustomField}
+                          borderRadius="lg"
+                          px={6}
+                          py={2}
+                        >
+                          Add Custom Field
+                        </Button>
+                      </Flex>
+                    </CardHeader>
+                    <CardBody pt={0}>
+                      <VStack spacing={4} align="stretch">
+                        <Text color="gray.600" fontSize="sm">
+                          Configure additional fields that will appear in KOL forms. These fields are dynamic and can be added without modifying the database schema.
+                        </Text>
+
+                        <Box overflowX="auto">
+                          <Table variant="simple">
+                            <Thead>
+                              <Tr>
+                                <Th>Field Key</Th>
+                                <Th>Field Label</Th>
+                                <Th>Type</Th>
+                                <Th>Required</Th>
+                                <Th>Display Order</Th>
+                                <Th>Actions</Th>
+                              </Tr>
+                            </Thead>
+                            <Tbody>
+                              {customFields.map((field) => (
+                                <Tr key={field.id}>
+                                  <Td fontFamily="mono" fontSize="sm" fontWeight="600">
+                                    {field.field_key}
+                                  </Td>
+                                  <Td fontWeight="600">{field.field_label}</Td>
+                                  <Td>
+                                    <Badge colorScheme="blue" borderRadius="full" fontSize="xs">
+                                      {field.field_type}
+                                    </Badge>
+                                  </Td>
+                                  <Td>
+                                    {field.is_required ? (
+                                      <Badge colorScheme="red" fontSize="xs">Required</Badge>
+                                    ) : (
+                                      <Badge colorScheme="gray" fontSize="xs">Optional</Badge>
+                                    )}
+                                  </Td>
+                                  <Td>{field.display_order}</Td>
+                                  <Td>
+                                    <HStack spacing={2}>
+                                      <IconButton
+                                        size="sm"
+                                        icon={<Edit3 size={16} />}
+                                        colorScheme="blue"
+                                        variant="ghost"
+                                        onClick={() => handleEditCustomField(field)}
+                                        aria-label="Edit field"
+                                      />
+                                      <IconButton
+                                        size="sm"
+                                        icon={<Trash2 size={16} />}
+                                        colorScheme="red"
+                                        variant="ghost"
+                                        onClick={() => handleDeleteCustomField(field.id)}
+                                        aria-label="Delete field"
+                                      />
+                                    </HStack>
+                                  </Td>
+                                </Tr>
+                              ))}
+                              {customFields.length === 0 && (
+                                <Tr>
+                                  <Td colSpan={6} textAlign="center" py={8}>
+                                    <VStack spacing={2}>
+                                      <Text color="gray.500">No custom fields configured yet</Text>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        colorScheme="red"
+                                        onClick={handleAddCustomField}
+                                      >
+                                        Add Your First Custom Field
+                                      </Button>
+                                    </VStack>
+                                  </Td>
+                                </Tr>
+                              )}
+                            </Tbody>
+                          </Table>
+                        </Box>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </VStack>
+              </TabPanel>
+
             </TabPanels>
           </Tabs>
         </VStack>
@@ -1113,7 +1375,7 @@ const Settings = () => {
                 <Trash2 size={32} color="#dc2626" />
               </Box>
               <Text textAlign="center">
-                Are you sure you want to delete <strong>{userToDelete?.name}</strong>? 
+                Are you sure you want to delete <strong>{userToDelete?.name}</strong>?
                 This action cannot be undone.
               </Text>
             </VStack>
@@ -1125,6 +1387,108 @@ const Settings = () => {
             </Button>
             <Button colorScheme="red" onClick={handleDeleteUser}>
               Delete User
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Add/Edit Custom Field Modal */}
+      <Modal isOpen={isCustomFieldOpen} onClose={onCustomFieldClose} size="lg">
+        <ModalOverlay backdropFilter="blur(10px)" />
+        <ModalContent
+          bg={glassBg}
+          backdropFilter="blur(20px)"
+          border="1px solid"
+          borderColor={glassBorder}
+          borderRadius="2xl"
+        >
+          <ModalHeader color="red.600" fontWeight="700">
+            {editingField ? 'Edit Custom Field' : 'Add Custom Field'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  Field Key (no spaces, lowercase)
+                </FormLabel>
+                <Input
+                  value={customFieldForm.fieldKey}
+                  onChange={(e) =>
+                    setCustomFieldForm({ ...customFieldForm, fieldKey: e.target.value.toLowerCase().replace(/\s/g, '_') })
+                  }
+                  placeholder="e.g., ic_number"
+                  isDisabled={!!editingField}
+                  bg="rgba(255, 255, 255, 0.8)"
+                  borderRadius="lg"
+                />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  This is the unique identifier for the field (cannot be changed after creation)
+                </Text>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  Field Label
+                </FormLabel>
+                <Input
+                  value={customFieldForm.fieldLabel}
+                  onChange={(e) =>
+                    setCustomFieldForm({ ...customFieldForm, fieldLabel: e.target.value })
+                  }
+                  placeholder="e.g., IC Number"
+                  bg="rgba(255, 255, 255, 0.8)"
+                  borderRadius="lg"
+                />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  This is what users will see in the form
+                </Text>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  Field Type
+                </FormLabel>
+                <Select
+                  value={customFieldForm.fieldType}
+                  onChange={(e) =>
+                    setCustomFieldForm({ ...customFieldForm, fieldType: e.target.value })
+                  }
+                  bg="rgba(255, 255, 255, 0.8)"
+                  borderRadius="lg"
+                >
+                  <option value="text">Text</option>
+                  <option value="textarea">Text Area</option>
+                  <option value="select">Select (Dropdown)</option>
+                </Select>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel fontSize="sm" fontWeight="600">
+                  Display Order
+                </FormLabel>
+                <Input
+                  type="number"
+                  value={customFieldForm.displayOrder}
+                  onChange={(e) =>
+                    setCustomFieldForm({ ...customFieldForm, displayOrder: parseInt(e.target.value) || 0 })
+                  }
+                  bg="rgba(255, 255, 255, 0.8)"
+                  borderRadius="lg"
+                />
+                <Text fontSize="xs" color="gray.500" mt={1}>
+                  Lower numbers appear first
+                </Text>
+              </FormControl>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onCustomFieldClose}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={handleSaveCustomField}>
+              {editingField ? 'Update' : 'Create'}
             </Button>
           </ModalFooter>
         </ModalContent>

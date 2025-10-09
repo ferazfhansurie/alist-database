@@ -422,17 +422,20 @@ const Navigation = () => {
                   >
                     <MenuItem
                       icon={<User size={16} />}
+                      onClick={() => navigate('/profile')}
                       _hover={{ bg: 'rgba(220, 38, 38, 0.05)' }}
                     >
                       Profile
                     </MenuItem>
-                    <MenuItem
-                      icon={<Settings size={16} />}
-                      onClick={() => navigate('/settings')}
-                      _hover={{ bg: 'rgba(220, 38, 38, 0.05)' }}
-                    >
-                      Settings
-                    </MenuItem>
+                    {user?.role === 'admin' && (
+                      <MenuItem
+                        icon={<Settings size={16} />}
+                        onClick={() => navigate('/settings')}
+                        _hover={{ bg: 'rgba(220, 38, 38, 0.05)' }}
+                      >
+                        Database Settings
+                      </MenuItem>
+                    )}
                     <MenuDivider />
                     <MenuItem
                       icon={<LogOut size={16} />}
@@ -683,23 +686,8 @@ const Navigation = () => {
                   size="lg"
                   justifyContent="start"
                   leftIcon={<User size={20} />}
-                  fontWeight="600"
-                  borderRadius="xl"
-                  _hover={{
-                    bg: 'rgba(220, 38, 38, 0.05)',
-                    transform: 'translateX(4px)',
-                  }}
-                  transition="all 0.2s ease"
-                >
-                  Profile
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  justifyContent="start"
-                  leftIcon={<Settings size={20} />}
                   onClick={() => {
-                    navigate('/settings');
+                    navigate('/profile');
                     onMobileMenuClose();
                   }}
                   fontWeight="600"
@@ -710,8 +698,29 @@ const Navigation = () => {
                   }}
                   transition="all 0.2s ease"
                 >
-                  Settings
+                  Profile
                 </Button>
+                {user?.role === 'admin' && (
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    justifyContent="start"
+                    leftIcon={<Settings size={20} />}
+                    onClick={() => {
+                      navigate('/settings');
+                      onMobileMenuClose();
+                    }}
+                    fontWeight="600"
+                    borderRadius="xl"
+                    _hover={{
+                      bg: 'rgba(220, 38, 38, 0.05)',
+                      transform: 'translateX(4px)',
+                    }}
+                    transition="all 0.2s ease"
+                  >
+                    Database Settings
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="lg"

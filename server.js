@@ -9,10 +9,11 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors({
   origin: [
-    'http://localhost:3000', 
+    'http://localhost:3000',
     'http://127.0.0.1:3000',
     'https://alist-database.vercel.app',
-    'https://alist-database-git-main-firaz.vercel.app'
+    'https://alist-database-git-main-firaz.vercel.app',
+    'https://e8c11521c11e51ab.ngrok.app'
   ],
   credentials: true
 }));
@@ -141,9 +142,11 @@ async function initializeDatabase() {
         contact_number VARCHAR(20) NOT NULL,
         submission_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         rate_details TEXT,
+        rate_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         pic pic NOT NULL DEFAULT 'Amir',
         kol_type kol_type NOT NULL DEFAULT 'social-media',
         notes TEXT,
+        custom_fields JSONB DEFAULT '{}',
         is_active BOOLEAN NOT NULL DEFAULT true,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -152,13 +155,15 @@ async function initializeDatabase() {
 
     // Add platform-specific rate columns to existing kols table (migration)
     await pool.query(`
-      ALTER TABLE kols 
+      ALTER TABLE kols
       ADD COLUMN IF NOT EXISTS instagram_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS tiktok_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS facebook_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS twitter_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS thread_rate DECIMAL(10,2) DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS blog_rate DECIMAL(10,2) DEFAULT 0;
+      ADD COLUMN IF NOT EXISTS blog_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS rate_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}';
     `);
 
     await pool.query(`
@@ -167,6 +172,31 @@ async function initializeDatabase() {
         niche_id INTEGER REFERENCES niches(id) ON DELETE CASCADE,
         PRIMARY KEY (kol_id, niche_id)
       );
+    `);
+
+    // Create custom fields configuration table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS custom_field_configs (
+        id SERIAL PRIMARY KEY,
+        field_key VARCHAR(100) UNIQUE NOT NULL,
+        field_label VARCHAR(255) NOT NULL,
+        field_type VARCHAR(50) NOT NULL,
+        field_options JSONB DEFAULT '[]',
+        is_required BOOLEAN DEFAULT false,
+        display_order INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Insert default custom fields
+    await pool.query(`
+      INSERT INTO custom_field_configs (field_key, field_label, field_type, is_required, display_order) VALUES
+        ('ic_number', 'IC Number', 'text', false, 1),
+        ('bank_name', 'Bank Name', 'text', false, 2),
+        ('bank_account', 'Bank Account Number', 'text', false, 3)
+      ON CONFLICT (field_key) DO NOTHING;
     `);
 
     // Insert default niches
@@ -322,10 +352,10 @@ async function migrateSampleData() {
 app.get('/api/kols', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT 
+      SELECT
         k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
         k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
-        k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+        k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
         k.created_at, k.updated_at,
         k.instagram_rate as "instagramRate",
         k.tiktok_rate as "tiktokRate",
@@ -340,7 +370,7 @@ app.get('/api/kols', async (req, res) => {
       WHERE k.is_active = true
       GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
                k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
-               k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+               k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
                k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
                k.twitter_rate, k.thread_rate, k.blog_rate
       ORDER BY k.created_at DESC
@@ -363,10 +393,10 @@ app.get('/api/kols/type/:type', async (req, res) => {
   try {
     const { type } = req.params;
     const result = await pool.query(`
-      SELECT 
+      SELECT
         k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
         k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
-        k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+        k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
         k.created_at, k.updated_at,
         k.instagram_rate as "instagramRate",
         k.tiktok_rate as "tiktokRate",
@@ -381,7 +411,7 @@ app.get('/api/kols/type/:type', async (req, res) => {
       WHERE k.kol_type = $1 AND k.is_active = true
       GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
                k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
-               k.submission_date, k.rate_details, k.pic, k.kol_type, k.notes, k.is_active,
+               k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
                k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
                k.twitter_rate, k.thread_rate, k.blog_rate
       ORDER BY k.created_at DESC
@@ -435,8 +465,8 @@ app.post('/api/kols', async (req, res) => {
         name, instagram, tiktok, facebook, twitter, thread, blog,
         rate, instagram_rate, tiktok_rate, facebook_rate, twitter_rate, thread_rate, blog_rate,
         tier, gender, hair_style, race, address, contact_number,
-        rate_details, pic, kol_type, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+        rate_details, rate_updated_at, pic, kol_type, notes, custom_fields
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
       RETURNING *
     `, [
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
@@ -445,7 +475,9 @@ app.post('/api/kols', async (req, res) => {
       kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0,
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
-      kolData.pic, kolData.kolType, kolData.notes
+      kolData.rateUpdatedAt || new Date().toISOString(),
+      kolData.pic, kolData.kolType, kolData.notes,
+      JSON.stringify(kolData.customFields || {})
     ]);
     
     const newKOL = kolResult.rows[0];
@@ -561,8 +593,9 @@ app.put('/api/kols/:id', async (req, res) => {
         twitter_rate = $12, thread_rate = $13, blog_rate = $14,
         tier = $15, gender = $16, hair_style = $17, race = $18,
         address = $19, contact_number = $20, rate_details = $21,
-        pic = $22, kol_type = $23, notes = $24, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $25
+        rate_updated_at = $22, pic = $23, kol_type = $24, notes = $25,
+        custom_fields = $26, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $27
       RETURNING *
     `, [
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
@@ -571,7 +604,9 @@ app.put('/api/kols/:id', async (req, res) => {
       kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0,
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
-      kolData.pic, kolData.kolType, kolData.notes, id
+      kolData.rateUpdatedAt || new Date().toISOString(),
+      kolData.pic, kolData.kolType, kolData.notes,
+      JSON.stringify(kolData.customFields || {}), id
     ]);
     
     if (updateResult.rows.length === 0) {
@@ -667,6 +702,99 @@ app.get('/api/niches', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching niches:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Custom Fields API endpoints
+
+// Get all custom field configurations
+app.get('/api/custom-fields', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM custom_field_configs
+      WHERE is_active = true
+      ORDER BY display_order, field_label
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching custom fields:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create new custom field configuration
+app.post('/api/custom-fields', async (req, res) => {
+  try {
+    const { fieldKey, fieldLabel, fieldType, fieldOptions, isRequired, displayOrder } = req.body;
+
+    if (!fieldKey || !fieldLabel || !fieldType) {
+      return res.status(400).json({ error: 'fieldKey, fieldLabel, and fieldType are required' });
+    }
+
+    const result = await pool.query(`
+      INSERT INTO custom_field_configs (field_key, field_label, field_type, field_options, is_required, display_order)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [fieldKey, fieldLabel, fieldType, JSON.stringify(fieldOptions || []), isRequired || false, displayOrder || 0]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error creating custom field:', error);
+    if (error.code === '23505') { // Unique violation
+      res.status(409).json({ error: 'Custom field with this key already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Update custom field configuration
+app.put('/api/custom-fields/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fieldLabel, fieldType, fieldOptions, isRequired, displayOrder, isActive } = req.body;
+
+    const result = await pool.query(`
+      UPDATE custom_field_configs SET
+        field_label = $1,
+        field_type = $2,
+        field_options = $3,
+        is_required = $4,
+        display_order = $5,
+        is_active = $6,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
+      RETURNING *
+    `, [fieldLabel, fieldType, JSON.stringify(fieldOptions || []), isRequired, displayOrder, isActive, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Custom field not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating custom field:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete custom field configuration (soft delete)
+app.delete('/api/custom-fields/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      'UPDATE custom_field_configs SET is_active = false WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Custom field not found' });
+    }
+
+    res.json({ message: 'Custom field deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting custom field:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
