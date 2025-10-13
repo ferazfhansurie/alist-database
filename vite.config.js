@@ -31,7 +31,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://e8c11521c11e51ab.ngrok.app',
+        target: 'https://alist.serveo.net',
         changeOrigin: true,
         secure: true
       }

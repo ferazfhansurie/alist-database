@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/auth/login', {
+      const response = await fetch('https://alist.serveo.net/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/auth/change-password', {
+      const response = await fetch('https://alist.serveo.net/api/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

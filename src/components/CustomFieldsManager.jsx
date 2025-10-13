@@ -30,6 +30,7 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { Plus, Edit, Trash2, Settings } from 'lucide-react';
+import { getApiUrl } from '../config/api';
 
 const CustomFieldsManager = () => {
   const [customFields, setCustomFields] = useState([]);
@@ -54,7 +55,7 @@ const CustomFieldsManager = () => {
 
   const fetchCustomFields = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/custom-fields');
+      const response = await fetch(getApiUrl('/api/custom-fields'));
       const data = await response.json();
       setCustomFields(data);
     } catch (error) {
@@ -74,8 +75,8 @@ const CustomFieldsManager = () => {
 
     try {
       const url = editingField
-        ? `http://localhost:3001/api/custom-fields/${editingField.id}`
-        : 'http://localhost:3001/api/custom-fields';
+        ? getApiUrl(`/api/custom-fields/${editingField.id}`)
+        : getApiUrl('/api/custom-fields');
 
       const method = editingField ? 'PUT' : 'POST';
 
@@ -130,7 +131,7 @@ const CustomFieldsManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/custom-fields/${id}`, {
+      const response = await fetch(getApiUrl(`/api/custom-fields/${id}`), {
         method: 'DELETE',
       });
 

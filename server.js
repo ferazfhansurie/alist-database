@@ -13,7 +13,7 @@ app.use(cors({
     'http://127.0.0.1:3000',
     'https://alist-database.vercel.app',
     'https://alist-database-git-main-firaz.vercel.app',
-    'https://e8c11521c11e51ab.ngrok.app'
+    'https://alist.serveo.net'
   ],
   credentials: true
 }));
@@ -836,33 +836,68 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Change password endpoint
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const { userId, currentPassword, newPassword } = req.body;
+
+    if (!userId || !currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'User ID, current password, and new password are required' });
+    }
+
+    // Verify current password
+    const result = await pool.query(
+      'SELECT id, email, name FROM users WHERE id = $1 AND password_hash = $2',
+      [userId, currentPassword]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Update password
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [newPassword, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Create initial user (for setup purposes)
 app.post('/api/auth/setup', async (req, res) => {
   try {
     const { email, password, name } = req.body;
-    
+
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
     }
-    
+
     // Check if user already exists
     const existingUser = await pool.query(
       'SELECT id FROM users WHERE email = $1',
       [email]
     );
-    
+
     if (existingUser.rows.length > 0) {
       return res.status(409).json({ error: 'User already exists' });
     }
-    
+
     // Create new user
     const result = await pool.query(
       'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role',
       [email, password, name, 'admin']
     );
-    
+
     const user = result.rows[0];
-    
+
     res.status(201).json({
       success: true,
       user: {

@@ -3,7 +3,7 @@
 
 const createUser = async () => {
   try {
-    const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/auth/setup', {
+    const response = await fetch('https://alist.serveo.net/api/auth/setup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

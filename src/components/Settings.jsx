@@ -73,6 +73,7 @@ import {
 } from 'lucide-react';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiUrl } from '../config/api';
 
 const MotionBox = motion(Box);
 
@@ -120,7 +121,7 @@ const Settings = () => {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/users');
+      const response = await fetch('https://alist.serveo.net/api/users');
       
       if (!response.ok) {
         throw new Error('Failed to fetch users');
@@ -150,7 +151,7 @@ const Settings = () => {
   // Load custom fields from API
   const loadCustomFields = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/custom-fields');
+      const response = await fetch(getApiUrl('/api/custom-fields'));
       if (!response.ok) {
         throw new Error('Failed to fetch custom fields');
       }
@@ -279,7 +280,7 @@ const Settings = () => {
     }
 
     try {
-      const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/users', {
+      const response = await fetch('https://alist.serveo.net/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -320,7 +321,7 @@ const Settings = () => {
     if (!userToDelete) return;
 
     try {
-      const response = await fetch(`https://e8c11521c11e51ab.ngrok.app/api/users/${userToDelete.id}`, {
+      const response = await fetch(`https://alist.serveo.net/api/users/${userToDelete.id}`, {
         method: 'DELETE',
       });
 
@@ -490,7 +491,7 @@ const Settings = () => {
             };
 
             // Send to API
-            const response = await fetch('https://e8c11521c11e51ab.ngrok.app/api/kols', {
+            const response = await fetch('https://alist.serveo.net/api/kols', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -735,8 +736,8 @@ const Settings = () => {
 
     try {
       const url = editingField
-        ? `http://localhost:3001/api/custom-fields/${editingField.id}`
-        : 'http://localhost:3001/api/custom-fields';
+        ? getApiUrl(`/api/custom-fields/${editingField.id}`)
+        : getApiUrl('/api/custom-fields');
 
       const method = editingField ? 'PUT' : 'POST';
 
@@ -779,7 +780,7 @@ const Settings = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/custom-fields/${id}`, {
+      const response = await fetch(getApiUrl(`/api/custom-fields/${id}`), {
         method: 'DELETE',
       });
 

@@ -25,16 +25,17 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { Plus, X, Save, User, Link, DollarSign, Users, MapPin, Phone, Calendar, FileText, UserCheck } from 'lucide-react';
-import { 
-  TIERS, 
-  GENDERS, 
-  NICHES, 
-  HAIR_STYLES, 
-  RACES, 
-  STATES, 
+import {
+  TIERS,
+  GENDERS,
+  NICHES,
+  HAIR_STYLES,
+  RACES,
+  STATES,
   PICS,
-  KOL_TYPES 
+  KOL_TYPES
 } from '../data/models';
+import { getApiUrl } from '../config/api';
 
 const MotionBox = motion(Box);
 
@@ -91,7 +92,7 @@ const KOLForm = ({
   useEffect(() => {
     const fetchCustomFields = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/custom-fields');
+        const response = await fetch(getApiUrl('/api/custom-fields'));
         const data = await response.json();
         setCustomFieldConfigs(data);
       } catch (error) {

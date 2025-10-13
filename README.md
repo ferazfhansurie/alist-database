@@ -61,8 +61,8 @@ npm run dev
 
 The application will be available at:
 - Frontend: http://localhost:5173
-- Backend API: https://e8c11521c11e51ab.ngrok.app
-- Health Check: https://e8c11521c11e51ab.ngrok.app/api/health
+- Backend API: https://alist.serveo.net
+- Health Check: https://alist.serveo.net/api/health
 
 ## Database Schema
 
