@@ -6,17 +6,19 @@ const { Pool } = pg;
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Middleware - Temporarily allowing all origins for testing
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://alist-database.vercel.app',
-    'https://alist-database-git-main-firaz.vercel.app',
-    'https://alist.serveo.net'
-  ],
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
+// Log all incoming requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  next();
+});
 app.use(express.json());
 
 // Database configuration

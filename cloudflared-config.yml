@@ -1,0 +1,21 @@
+tunnel: c804d88d-7926-4495-93fc-8c4be9da1531
+credentials-file: /home/firaz/.cloudflared/c804d88d-7926-4495-93fc-8c4be9da1531.json
+
+# Ingress rules for AList Database
+ingress:
+  - hostname: alist.jutateknologi.com
+    service: http://localhost:3001
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+      tlsTimeout: 30s
+      tcpKeepAlive: 30s
+      noHappyEyeballs: false
+      keepAliveTimeout: 5m0s
+      keepAliveConnections: 100
+      httpHostHeader: localhost
+      originServerName: localhost
+      tlsHandshakeTimeout: 10s
+  
+  # Catch-all rule for 404s
+  - service: http_status:404

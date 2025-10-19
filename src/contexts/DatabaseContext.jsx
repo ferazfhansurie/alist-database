@@ -86,7 +86,7 @@ export const DatabaseProvider = ({ children }) => {
   // Load all KOLs
   const loadKOLs = async () => {
     try {
-      const response = await fetch('https://alist.serveo.net/api/kols');
+      const response = await fetch('https://alist.jutateknologi.com/api/kols');
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs');
       }
@@ -105,7 +105,7 @@ export const DatabaseProvider = ({ children }) => {
   // Load KOLs by type
   const loadKOLsByType = async (kolType) => {
     try {
-      const response = await fetch(`https://alist.serveo.net/api/kols/type/${kolType}`);
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/type/${kolType}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs by type');
       }
@@ -122,7 +122,7 @@ export const DatabaseProvider = ({ children }) => {
   // Load statistics
   const loadStats = async () => {
     try {
-      const response = await fetch('https://alist.serveo.net/api/kols/stats');
+      const response = await fetch('https://alist.jutateknologi.com/api/kols/stats');
       if (!response.ok) {
         throw new Error('Failed to fetch stats');
       }
@@ -145,7 +145,7 @@ export const DatabaseProvider = ({ children }) => {
   // Create new KOL
   const createKOL = async (kolData) => {
     try {
-      const response = await fetch('https://alist.serveo.net/api/kols', {
+      const response = await fetch('https://alist.jutateknologi.com/api/kols', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ export const DatabaseProvider = ({ children }) => {
   // Update KOL
   const updateKOL = async (id, kolData) => {
     try {
-      const response = await fetch(`https://alist.serveo.net/api/kols/${id}`, {
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +199,7 @@ export const DatabaseProvider = ({ children }) => {
   // Delete KOL
   const deleteKOL = async (id) => {
     try {
-      const response = await fetch(`https://alist.serveo.net/api/kols/${id}`, {
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`, {
         method: 'DELETE',
       });
       
@@ -219,7 +219,7 @@ export const DatabaseProvider = ({ children }) => {
   // Get KOL by ID
   const getKOLById = async (id) => {
     try {
-      const response = await fetch(`https://alist.serveo.net/api/kols/${id}`);
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOL');
       }
@@ -236,7 +236,7 @@ export const DatabaseProvider = ({ children }) => {
   // Get all niches
   const getNiches = async () => {
     try {
-      const response = await fetch('https://alist.serveo.net/api/niches');
+      const response = await fetch('https://alist.jutateknologi.com/api/niches');
       if (!response.ok) {
         throw new Error('Failed to fetch niches');
       }

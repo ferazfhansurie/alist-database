@@ -61,8 +61,8 @@ npm run dev
 
 The application will be available at:
 - Frontend: http://localhost:5173
-- Backend API: https://alist.serveo.net
-- Health Check: https://alist.serveo.net/api/health
+- Backend API: https://alist.jutateknologi.com
+- Health Check: https://alist.jutateknologi.com/api/health
 
 ## Database Schema
 

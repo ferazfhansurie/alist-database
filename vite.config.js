@@ -31,7 +31,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://alist.serveo.net',
+        target: 'https://alist.jutateknologi.com',
         changeOrigin: true,
         secure: true
       }
