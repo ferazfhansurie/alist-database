@@ -103,14 +103,6 @@ async function initializeDatabase() {
       END $$;
     `);
 
-    await pool.query(`
-      DO $$ BEGIN
-        CREATE TYPE pic AS ENUM ('Amir', 'Tika', 'Aina');
-      EXCEPTION
-        WHEN duplicate_object THEN null;
-      END $$;
-    `);
-
     // Create tables
     await pool.query(`
       CREATE TABLE IF NOT EXISTS niches (
@@ -153,7 +145,7 @@ async function initializeDatabase() {
         submission_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         rate_details TEXT,
         rate_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  pic pic NOT NULL DEFAULT 'Amir',
+  pic VARCHAR(255) NOT NULL DEFAULT 'Amir',
   pic_user_id INTEGER REFERENCES users(id),
         kol_type kol_type NOT NULL DEFAULT 'social-media',
         notes TEXT,
