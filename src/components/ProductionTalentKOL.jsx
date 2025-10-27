@@ -48,7 +48,7 @@ import {
   Mic,
   Video
 } from 'lucide-react';
-import { KOL_TYPES, TIERS, NICHES, STATES } from '../data/models';
+import { KOL_TYPES, TIERS, TALENT_NICHES, STATES } from '../data/models';
 import KOLForm from './KOLForm';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -400,7 +400,7 @@ const ProductionTalentKOL = () => {
                     _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
                   >
                     <option value="All Niches">🏷️ All</option>
-                    {NICHES.map(niche => (
+                    {TALENT_NICHES.map(niche => (
                       <option key={niche} value={niche}>{niche}</option>
                     ))}
                   </Select>

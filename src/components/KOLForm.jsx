@@ -35,6 +35,7 @@ import {
   PICS,
   KOL_TYPES
 } from '../data/models';
+import { TALENT_NICHES } from '../data/models';
 import { getApiUrl } from '../config/api';
 
 const MotionBox = motion(Box);
@@ -70,6 +71,7 @@ const KOLForm = ({
     rating: 0,
     sellingPrice: 0,
     pic: PICS[0],
+    picUserId: null,
     kolType: kolType,
     notes: '',
     customFields: {}
@@ -88,10 +90,33 @@ const KOLForm = ({
     if (initialData) {
       setFormData({
         ...initialData,
+        picUserId: initialData.picUserId || initialData.pic_user_id || null,
         customFields: initialData.custom_fields || initialData.customFields || {}
       });
     }
   }, [initialData]);
+
+  // Load users for PIC selection
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await fetch(getApiUrl('/api/users'));
+      if (!res.ok) throw new Error('Failed to load users');
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error('Error loading users for PIC:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   // Fetch custom field configurations
   useEffect(() => {
@@ -1094,7 +1119,7 @@ const KOLForm = ({
                     >
                       <CheckboxGroup value={formData.niches} onChange={handleNichesChange}>
                         <Grid templateColumns="repeat(auto-fit, minmax(150px, 1fr))" gap={3}>
-                          {NICHES.map(niche => (
+                          {(formData.kolType === KOL_TYPES.PRODUCTION_TALENT ? TALENT_NICHES : NICHES).map(niche => (
                             <Checkbox 
                               key={niche} 
                               value={niche} 
@@ -1118,8 +1143,8 @@ const KOLForm = ({
                       border="1px solid"
                       borderColor="rgba(220, 38, 38, 0.2)"
                       borderRadius="lg"
-                      value={formData.pic}
-                      onChange={(e) => handleInputChange('pic', e.target.value)}
+                      value={formData.picUserId || ''}
+                      onChange={(e) => handleInputChange('picUserId', e.target.value ? parseInt(e.target.value) : null)}
                       _focus={{
                         borderColor: 'red.400',
                         boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
@@ -1130,10 +1155,22 @@ const KOLForm = ({
                       }}
                       transition="all 0.2s ease"
                     >
-                      {PICS.map(pic => (
-                        <option key={pic} value={pic}>{pic}</option>
+                      <option value="">-- Select PIC (user) --</option>
+                      {users.map(u => (
+                        <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                       ))}
                     </Select>
+                    {/* If user selects Other, allow manual pic name in the existing pic field */}
+                    <Input
+                      mt={2}
+                      bg="rgba(255, 255, 255, 0.8)"
+                      value={formData.pic}
+                      onChange={(e) => handleInputChange('pic', e.target.value)}
+                      placeholder="Manual PIC name (optional)"
+                    />
+                    <Text fontSize="xs" color="gray.500" mt={2}>
+                      Select a user to assign as PIC. If you need to use a custom name, choose "Other" and type it in.
+                    </Text>
                   </FormControl>
                 </Grid>
               </Box>

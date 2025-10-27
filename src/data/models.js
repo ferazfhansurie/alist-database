@@ -56,6 +56,19 @@ export const NICHES = [
   'AUTOMOTIVE'
 ];
 
+// Talent-specific niches (used for production/talent KOLs)
+export const TALENT_NICHES = [
+  'Videographer',
+  'MUA',
+  'Voice Over Talent',
+  'Model',
+  'Photographer',
+  'Stylist',
+  'Studio',
+  'Hairdo',
+  'Fashion Designer'
+];
+
 export const HAIR_STYLES = [
   'Hijab',
   'Free Hair',

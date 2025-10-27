@@ -153,7 +153,8 @@ async function initializeDatabase() {
         submission_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         rate_details TEXT,
         rate_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        pic pic NOT NULL DEFAULT 'Amir',
+  pic pic NOT NULL DEFAULT 'Amir',
+  pic_user_id INTEGER REFERENCES users(id),
         kol_type kol_type NOT NULL DEFAULT 'social-media',
         notes TEXT,
         custom_fields JSONB DEFAULT '{}',
@@ -175,6 +176,7 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS youtube_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS lemon8_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS xhs_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS pic_user_id INTEGER,
       ADD COLUMN IF NOT EXISTS rating SMALLINT DEFAULT 0,
       ADD COLUMN IF NOT EXISTS selling_price DECIMAL(12,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS rate_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -386,16 +388,19 @@ app.get('/api/kols', async (req, res) => {
         k.xhs_rate AS xhsRate,
         k.rating AS rating,
         k.selling_price AS sellingPrice,
-        ARRAY_AGG(n.name) as niches
+        k.pic_user_id AS picUserId,
+        u.name AS picUserName,
+        ARRAY_AGG(n.name) AS niches
       FROM kols k
-      LEFT JOIN kol_niches kn ON k.id = kn.kol_id
-      LEFT JOIN niches n ON kn.niche_id = n.id
+  LEFT JOIN kol_niches kn ON k.id = kn.kol_id
+  LEFT JOIN niches n ON kn.niche_id = n.id
+  LEFT JOIN users u ON k.pic_user_id = u.id
       WHERE k.is_active = true
-      GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
-               k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
-               k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
-               k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
-               k.twitter_rate, k.thread_rate, k.blog_rate
+  GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
+       k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
+       k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
+       k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
+       k.twitter_rate, k.thread_rate, k.blog_rate, k.youtube, k.lemon8, k.xhs, k.youtube_rate, k.lemon8_rate, k.xhs_rate, k.rating, k.selling_price, k.pic_user_id, u.name
       ORDER BY k.created_at DESC
     `);
     
@@ -421,22 +426,33 @@ app.get('/api/kols/type/:type', async (req, res) => {
         k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
         k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
         k.created_at, k.updated_at,
-        k.instagram_rate as "instagramRate",
-        k.tiktok_rate as "tiktokRate",
-        k.facebook_rate as "facebookRate",
-        k.twitter_rate as "twitterRate",
-        k.thread_rate as "threadRate",
-        k.blog_rate as "blogRate",
-        ARRAY_AGG(n.name) as niches
+        k.instagram_rate AS instagramRate,
+        k.tiktok_rate AS tiktokRate,
+        k.facebook_rate AS facebookRate,
+        k.twitter_rate AS twitterRate,
+        k.thread_rate AS threadRate,
+        k.blog_rate AS blogRate,
+        k.youtube AS youtube,
+        k.lemon8 AS lemon8,
+        k.xhs AS xhs,
+        k.youtube_rate AS youtubeRate,
+        k.lemon8_rate AS lemon8Rate,
+        k.xhs_rate AS xhsRate,
+        k.rating AS rating,
+        k.selling_price AS sellingPrice,
+        k.pic_user_id AS picUserId,
+        u.name AS picUserName,
+        ARRAY_AGG(n.name) AS niches
       FROM kols k
-      LEFT JOIN kol_niches kn ON k.id = kn.kol_id
-      LEFT JOIN niches n ON kn.niche_id = n.id
+  LEFT JOIN kol_niches kn ON k.id = kn.kol_id
+  LEFT JOIN niches n ON kn.niche_id = n.id
+  LEFT JOIN users u ON k.pic_user_id = u.id
       WHERE k.kol_type = $1 AND k.is_active = true
-      GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
-               k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
-               k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
-               k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
-               k.twitter_rate, k.thread_rate, k.blog_rate, k.youtube, k.lemon8, k.xhs, k.youtube_rate, k.lemon8_rate, k.xhs_rate, k.rating, k.selling_price
+  GROUP BY k.id, k.name, k.instagram, k.tiktok, k.facebook, k.twitter, k.thread, k.blog,
+       k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
+       k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
+       k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
+       k.twitter_rate, k.thread_rate, k.blog_rate, k.youtube, k.lemon8, k.xhs, k.youtube_rate, k.lemon8_rate, k.xhs_rate, k.rating, k.selling_price, k.pic_user_id, u.name
       ORDER BY k.created_at DESC
     `, [type]);
     
@@ -490,8 +506,8 @@ app.post('/api/kols', async (req, res) => {
         rate, instagram_rate, tiktok_rate, facebook_rate, twitter_rate, thread_rate, blog_rate, youtube_rate, lemon8_rate, xhs_rate,
         rating, selling_price,
         tier, gender, hair_style, race, address, contact_number,
-        rate_details, rate_updated_at, pic, kol_type, notes, custom_fields
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
+        rate_details, rate_updated_at, pic_user_id, pic, kol_type, notes, custom_fields
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
       RETURNING *
     `, [
       kolData.youtube || null, kolData.lemon8 || null, kolData.xhs || null,
@@ -503,7 +519,7 @@ app.post('/api/kols', async (req, res) => {
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
       kolData.rateUpdatedAt || new Date().toISOString(),
-      kolData.pic, kolData.kolType, kolData.notes,
+      kolData.picUserId || null, kolData.pic, kolData.kolType, kolData.notes,
       JSON.stringify(kolData.customFields || {})
     ]);
     
@@ -543,18 +559,21 @@ app.post('/api/kols', async (req, res) => {
     const completeKOL = await pool.query(`
       SELECT 
         k.*,
-        k.instagram_rate as "instagramRate",
-        k.tiktok_rate as "tiktokRate",
-        k.facebook_rate as "facebookRate",
-        k.twitter_rate as "twitterRate",
-        k.thread_rate as "threadRate",
-        k.blog_rate as "blogRate",
-        ARRAY_AGG(n.name) as niches
+        k.instagram_rate AS instagramRate,
+        k.tiktok_rate AS tiktokRate,
+        k.facebook_rate AS facebookRate,
+        k.twitter_rate AS twitterRate,
+        k.thread_rate AS threadRate,
+        k.blog_rate AS blogRate,
+        k.pic_user_id AS picUserId,
+        u.name AS picUserName,
+        ARRAY_AGG(n.name) AS niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
       LEFT JOIN niches n ON kn.niche_id = n.id
+      LEFT JOIN users u ON k.pic_user_id = u.id
       WHERE k.id = $1
-      GROUP BY k.id
+      GROUP BY k.id, u.name
     `, [newKOL.id]);
     
     res.status(201).json(completeKOL.rows[0]);
@@ -574,18 +593,21 @@ app.get('/api/kols/:id', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         k.*,
-        k.instagram_rate as "instagramRate",
-        k.tiktok_rate as "tiktokRate",
-        k.facebook_rate as "facebookRate",
-        k.twitter_rate as "twitterRate",
-        k.thread_rate as "threadRate",
-        k.blog_rate as "blogRate",
-        ARRAY_AGG(n.name) as niches
+        k.instagram_rate AS instagramRate,
+        k.tiktok_rate AS tiktokRate,
+        k.facebook_rate AS facebookRate,
+        k.twitter_rate AS twitterRate,
+        k.thread_rate AS threadRate,
+        k.blog_rate AS blogRate,
+        k.pic_user_id AS picUserId,
+        u.name AS picUserName,
+        ARRAY_AGG(n.name) AS niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
       LEFT JOIN niches n ON kn.niche_id = n.id
+      LEFT JOIN users u ON k.pic_user_id = u.id
       WHERE k.id = $1 AND k.is_active = true
-      GROUP BY k.id
+      GROUP BY k.id, u.name
     `, [id]);
     
     if (result.rows.length === 0) {
@@ -623,9 +645,9 @@ app.put('/api/kols/:id', async (req, res) => {
         rating = $21, selling_price = $22,
         tier = $23, gender = $24, hair_style = $25, race = $26,
         address = $27, contact_number = $28, rate_details = $29,
-        rate_updated_at = $30, pic = $31, kol_type = $32, notes = $33,
-        custom_fields = $34, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $35
+        rate_updated_at = $30, pic_user_id = $31, pic = $32, kol_type = $33, notes = $34,
+        custom_fields = $35, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $36
       RETURNING *
     `, [
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
@@ -638,8 +660,8 @@ app.put('/api/kols/:id', async (req, res) => {
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
       kolData.rateUpdatedAt || new Date().toISOString(),
-      kolData.pic, kolData.kolType, kolData.notes,
-      JSON.stringify(kolData.customFields || {}), id
+  kolData.picUserId || null, kolData.pic, kolData.kolType, kolData.notes,
+  JSON.stringify(kolData.customFields || {}), id
     ]);
     
     if (updateResult.rows.length === 0) {
@@ -684,18 +706,21 @@ app.put('/api/kols/:id', async (req, res) => {
     const completeKOL = await pool.query(`
       SELECT 
         k.*,
-        k.instagram_rate as "instagramRate",
-        k.tiktok_rate as "tiktokRate",
-        k.facebook_rate as "facebookRate",
-        k.twitter_rate as "twitterRate",
-        k.thread_rate as "threadRate",
-        k.blog_rate as "blogRate",
-        ARRAY_AGG(n.name) as niches
+        k.instagram_rate AS instagramRate,
+        k.tiktok_rate AS tiktokRate,
+        k.facebook_rate AS facebookRate,
+        k.twitter_rate AS twitterRate,
+        k.thread_rate AS threadRate,
+        k.blog_rate AS blogRate,
+        k.pic_user_id AS picUserId,
+        u.name AS picUserName,
+        ARRAY_AGG(n.name) AS niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
       LEFT JOIN niches n ON kn.niche_id = n.id
+      LEFT JOIN users u ON k.pic_user_id = u.id
       WHERE k.id = $1
-      GROUP BY k.id
+      GROUP BY k.id, u.name
     `, [id]);
     
     res.json(completeKOL.rows[0]);
