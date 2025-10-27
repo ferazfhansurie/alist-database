@@ -54,6 +54,9 @@ const KOLForm = ({
     twitter: '',
     thread: '',
     blog: '',
+  youtube: '',
+  lemon8: '',
+  xhs: '',
     rate: 0,
     tier: TIERS[0],
     gender: GENDERS[0],
@@ -64,6 +67,8 @@ const KOLForm = ({
     contactNumber: '',
     rateDetails: '',
     rateUpdatedAt: new Date().toISOString().split('T')[0],
+    rating: 0,
+    sellingPrice: 0,
     pic: PICS[0],
     kolType: kolType,
     notes: '',
@@ -109,6 +114,10 @@ const KOLForm = ({
       processedValue = constructPlatformURL(field, value);
     }
 
+    if (['youtube', 'lemon8', 'xhs'].includes(field)) {
+      processedValue = constructPlatformURL(field, value);
+    }
+
     setFormData(prev => ({ ...prev, [field]: processedValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -143,6 +152,13 @@ const KOLForm = ({
         return `https://twitter.com/${cleanUsername}`;
       case 'thread':
         return `https://threads.net/@${cleanUsername}`;
+      case 'youtube':
+        // Support @username or channel IDs
+        return `https://youtube.com/@${cleanUsername}`;
+      case 'lemon8':
+        return `https://www.lemon8.co/${cleanUsername}`;
+      case 'xhs':
+        return `https://www.xiaohongshu.com/user/profile/${cleanUsername}`;
       default:
         return username;
     }
@@ -164,6 +180,12 @@ const KOLForm = ({
         case 'tiktok':
         case 'thread':
           return pathname.replace('/@', '').replace('/', '');
+        case 'youtube':
+          return pathname.replace('/@', '').replace('/channel/', '').replace('/', '');
+        case 'lemon8':
+          return pathname.replace('/', '');
+        case 'xhs':
+          return pathname.replace('/user/profile/', '').replace('/', '');
         default:
           return url;
       }
@@ -192,6 +214,14 @@ const KOLForm = ({
     
     if (formData.rate < 0) {
       newErrors.rate = 'Rate must be a positive number';
+    }
+
+    if (formData.sellingPrice < 0) {
+      newErrors.sellingPrice = 'Selling price must be a positive number';
+    }
+
+    if (formData.rating < 0 || formData.rating > 5) {
+      newErrors.rating = 'Rating must be between 0 and 5';
     }
     
     if (formData.niches.length === 0) {
@@ -374,6 +404,96 @@ const KOLForm = ({
                 placeholder="username (without @)"
                 value={extractUsername(formData.facebook, 'facebook')}
                 onChange={(e) => handleInputChange('facebook', e.target.value)}
+                _focus={{
+                  borderColor: 'red.400',
+                  boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                  bg: 'rgba(255, 255, 255, 0.95)'
+                }}
+                _hover={{
+                  borderColor: 'red.300'
+                }}
+                transition="all 0.2s ease"
+              />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
+                <HStack spacing={2}>
+                  <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
+                    <User size={14} color="#dc2626" />
+                  </Box>
+                  <Text>YouTube Username</Text>
+                </HStack>
+              </FormLabel>
+              <Input
+                bg="rgba(255, 255, 255, 0.8)"
+                backdropFilter="blur(15px)"
+                border="1px solid"
+                borderColor="rgba(220, 38, 38, 0.2)"
+                borderRadius="lg"
+                placeholder="username (without @) or channel id"
+                value={extractUsername(formData.youtube, 'youtube')}
+                onChange={(e) => handleInputChange('youtube', e.target.value)}
+                _focus={{
+                  borderColor: 'red.400',
+                  boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                  bg: 'rgba(255, 255, 255, 0.95)'
+                }}
+                _hover={{
+                  borderColor: 'red.300'
+                }}
+                transition="all 0.2s ease"
+              />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
+                <HStack spacing={2}>
+                  <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
+                    <User size={14} color="#dc2626" />
+                  </Box>
+                  <Text>Lemon8 Username</Text>
+                </HStack>
+              </FormLabel>
+              <Input
+                bg="rgba(255, 255, 255, 0.8)"
+                backdropFilter="blur(15px)"
+                border="1px solid"
+                borderColor="rgba(220, 38, 38, 0.2)"
+                borderRadius="lg"
+                placeholder="username (without @)"
+                value={extractUsername(formData.lemon8, 'lemon8')}
+                onChange={(e) => handleInputChange('lemon8', e.target.value)}
+                _focus={{
+                  borderColor: 'red.400',
+                  boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                  bg: 'rgba(255, 255, 255, 0.95)'
+                }}
+                _hover={{
+                  borderColor: 'red.300'
+                }}
+                transition="all 0.2s ease"
+              />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
+                <HStack spacing={2}>
+                  <Box p={1} borderRadius="md" bg="rgba(220, 38, 38, 0.1)">
+                    <User size={14} color="#dc2626" />
+                  </Box>
+                  <Text>XHS (XiaoHongShu) Username</Text>
+                </HStack>
+              </FormLabel>
+              <Input
+                bg="rgba(255, 255, 255, 0.8)"
+                backdropFilter="blur(15px)"
+                border="1px solid"
+                borderColor="rgba(220, 38, 38, 0.2)"
+                borderRadius="lg"
+                placeholder="username (without @)"
+                value={extractUsername(formData.xhs, 'xhs')}
+                onChange={(e) => handleInputChange('xhs', e.target.value)}
                 _focus={{
                   borderColor: 'red.400',
                   boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
@@ -709,7 +829,6 @@ const KOLForm = ({
                     </Select>
                   </FormControl>
                 </Grid>
-
                 <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4} mt={4}>
                   <FormControl>
                     <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
@@ -739,6 +858,57 @@ const KOLForm = ({
                       }}
                       transition="all 0.2s ease"
                     />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Selling Price (internal RM)</FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      backdropFilter="blur(15px)"
+                      border="1px solid"
+                      borderColor="rgba(220, 38, 38, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="Internal selling price"
+                      value={formData.sellingPrice}
+                      onChange={(e) => handleInputChange('sellingPrice', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'red.400',
+                        boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                        bg: 'rgba(255, 255, 255, 0.95)'
+                      }}
+                      _hover={{
+                        borderColor: 'red.300'
+                      }}
+                      transition="all 0.2s ease"
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Rating (stars)</FormLabel>
+                    <Select
+                      bg="rgba(255, 255, 255, 0.8)"
+                      backdropFilter="blur(15px)"
+                      border="1px solid"
+                      borderColor="rgba(220, 38, 38, 0.2)"
+                      borderRadius="lg"
+                      value={formData.rating}
+                      onChange={(e) => handleInputChange('rating', parseInt(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'red.400',
+                        boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                        bg: 'rgba(255, 255, 255, 0.95)'
+                      }}
+                      _hover={{
+                        borderColor: 'red.300'
+                      }}
+                      transition="all 0.2s ease"
+                    >
+                      <option value={0}>0</option>
+                      <option value={1}>1</option>
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
+                      <option value={4}>4</option>
+                      <option value={5}>5</option>
+                    </Select>
                   </FormControl>
                 </Grid>
 

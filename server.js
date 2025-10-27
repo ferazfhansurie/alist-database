@@ -65,7 +65,7 @@ async function initializeDatabase() {
 
     await pool.query(`
       DO $$ BEGIN
-        CREATE TYPE tier AS ENUM ('Tier 1 (Premium)', 'Tier 2 (Mid-tier)', 'Tier 3 (Emerging)', 'Tier 4 (Micro)', 'NANO', 'MICRO', 'MACRO', 'MEGA', 'MID-TIER');
+        CREATE TYPE tier AS ENUM ('Celebrity', 'Tier 1 (Premium)', 'Tier 2 (Mid-tier)', 'Tier 3 (Emerging)', 'Tier 4 (Micro)', 'NANO', 'MICRO', 'MACRO', 'MEGA', 'MID-TIER');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
@@ -128,6 +128,9 @@ async function initializeDatabase() {
         facebook VARCHAR(500),
         twitter VARCHAR(500),
         thread VARCHAR(500),
+        youtube VARCHAR(500),
+        lemon8 VARCHAR(500),
+        xhs VARCHAR(500),
         blog VARCHAR(500),
         rate DECIMAL(10,2) NOT NULL DEFAULT 0,
         instagram_rate DECIMAL(10,2) DEFAULT 0,
@@ -135,7 +138,12 @@ async function initializeDatabase() {
         facebook_rate DECIMAL(10,2) DEFAULT 0,
         twitter_rate DECIMAL(10,2) DEFAULT 0,
         thread_rate DECIMAL(10,2) DEFAULT 0,
+        youtube_rate DECIMAL(10,2) DEFAULT 0,
+        lemon8_rate DECIMAL(10,2) DEFAULT 0,
+        xhs_rate DECIMAL(10,2) DEFAULT 0,
         blog_rate DECIMAL(10,2) DEFAULT 0,
+        rating SMALLINT DEFAULT 0,
+        selling_price DECIMAL(12,2) DEFAULT 0,
         tier tier NOT NULL DEFAULT 'Tier 3 (Emerging)',
         gender gender NOT NULL DEFAULT 'Other',
         hair_style hair_style NOT NULL DEFAULT 'Free Hair',
@@ -164,6 +172,11 @@ async function initializeDatabase() {
       ADD COLUMN IF NOT EXISTS twitter_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS thread_rate DECIMAL(10,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS blog_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS youtube_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS lemon8_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS xhs_rate DECIMAL(10,2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS rating SMALLINT DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS selling_price DECIMAL(12,2) DEFAULT 0,
       ADD COLUMN IF NOT EXISTS rate_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}';
     `);
@@ -359,12 +372,20 @@ app.get('/api/kols', async (req, res) => {
         k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
         k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
         k.created_at, k.updated_at,
-        k.instagram_rate as "instagramRate",
-        k.tiktok_rate as "tiktokRate",
-        k.facebook_rate as "facebookRate",
-        k.twitter_rate as "twitterRate",
-        k.thread_rate as "threadRate",
-        k.blog_rate as "blogRate",
+        k.instagram_rate AS instagramRate,
+        k.tiktok_rate AS tiktokRate,
+        k.facebook_rate AS facebookRate,
+        k.twitter_rate AS twitterRate,
+        k.thread_rate AS threadRate,
+        k.blog_rate AS blogRate,
+        k.youtube AS youtube,
+        k.lemon8 AS lemon8,
+        k.xhs AS xhs,
+        k.youtube_rate AS youtubeRate,
+        k.lemon8_rate AS lemon8Rate,
+        k.xhs_rate AS xhsRate,
+        k.rating AS rating,
+        k.selling_price AS sellingPrice,
         ARRAY_AGG(n.name) as niches
       FROM kols k
       LEFT JOIN kol_niches kn ON k.id = kn.kol_id
@@ -415,7 +436,7 @@ app.get('/api/kols/type/:type', async (req, res) => {
                k.rate, k.tier, k.gender, k.hair_style, k.race, k.address, k.contact_number,
                k.submission_date, k.rate_details, k.rate_updated_at, k.pic, k.kol_type, k.notes, k.custom_fields, k.is_active,
                k.created_at, k.updated_at, k.instagram_rate, k.tiktok_rate, k.facebook_rate,
-               k.twitter_rate, k.thread_rate, k.blog_rate
+               k.twitter_rate, k.thread_rate, k.blog_rate, k.youtube, k.lemon8, k.xhs, k.youtube_rate, k.lemon8_rate, k.xhs_rate, k.rating, k.selling_price
       ORDER BY k.created_at DESC
     `, [type]);
     
@@ -464,17 +485,21 @@ app.post('/api/kols', async (req, res) => {
     // Insert KOL
     const kolResult = await client.query(`
       INSERT INTO kols (
+        youtube, lemon8, xhs,
         name, instagram, tiktok, facebook, twitter, thread, blog,
-        rate, instagram_rate, tiktok_rate, facebook_rate, twitter_rate, thread_rate, blog_rate,
+        rate, instagram_rate, tiktok_rate, facebook_rate, twitter_rate, thread_rate, blog_rate, youtube_rate, lemon8_rate, xhs_rate,
+        rating, selling_price,
         tier, gender, hair_style, race, address, contact_number,
         rate_details, rate_updated_at, pic, kol_type, notes, custom_fields
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
       RETURNING *
     `, [
+      kolData.youtube || null, kolData.lemon8 || null, kolData.xhs || null,
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
       kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
       kolData.instagramRate || 0, kolData.tiktokRate || 0, kolData.facebookRate || 0,
-      kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0,
+      kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0, kolData.youtubeRate || 0, kolData.lemon8Rate || 0, kolData.xhsRate || 0,
+      kolData.rating || 0, kolData.sellingPrice || 0,
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
       kolData.rateUpdatedAt || new Date().toISOString(),
@@ -541,7 +566,7 @@ app.post('/api/kols', async (req, res) => {
     client.release();
   }
 });
-
+       
 // Get KOL by ID
 app.get('/api/kols/:id', async (req, res) => {
   try {
@@ -593,17 +618,23 @@ app.put('/api/kols/:id', async (req, res) => {
         twitter = $5, thread = $6, blog = $7, rate = $8,
         instagram_rate = $9, tiktok_rate = $10, facebook_rate = $11,
         twitter_rate = $12, thread_rate = $13, blog_rate = $14,
-        tier = $15, gender = $16, hair_style = $17, race = $18,
-        address = $19, contact_number = $20, rate_details = $21,
-        rate_updated_at = $22, pic = $23, kol_type = $24, notes = $25,
-        custom_fields = $26, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $27
+        youtube = $15, lemon8 = $16, xhs = $17,
+        youtube_rate = $18, lemon8_rate = $19, xhs_rate = $20,
+        rating = $21, selling_price = $22,
+        tier = $23, gender = $24, hair_style = $25, race = $26,
+        address = $27, contact_number = $28, rate_details = $29,
+        rate_updated_at = $30, pic = $31, kol_type = $32, notes = $33,
+        custom_fields = $34, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $35
       RETURNING *
     `, [
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
       kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
       kolData.instagramRate || 0, kolData.tiktokRate || 0, kolData.facebookRate || 0,
       kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0,
+      kolData.youtube || null, kolData.lemon8 || null, kolData.xhs || null,
+      kolData.youtubeRate || 0, kolData.lemon8Rate || 0, kolData.xhsRate || 0,
+      kolData.rating || 0, kolData.sellingPrice || 0,
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
       kolData.rateUpdatedAt || new Date().toISOString(),

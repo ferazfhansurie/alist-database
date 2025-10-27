@@ -8,6 +8,7 @@ export const KOL_TYPES = {
 };
 
 export const TIERS = [
+  'Celebrity',
   'Tier 1 (Premium)',
   'Tier 2 (Mid-tier)',
   'Tier 3 (Emerging)',
@@ -107,6 +108,9 @@ export class KOLRecord {
     this.twitter = data.twitter || '';
     this.thread = data.thread || '';
     this.blog = data.blog || '';
+      this.youtube = data.youtube || '';
+      this.lemon8 = data.lemon8 || '';
+      this.xhs = data.xhs || '';
     this.rate = data.rate || 0;
     this.instagramRate = data.instagramRate || data.instagram_rate || 0;
     this.tiktokRate = data.tiktokRate || data.tiktok_rate || 0;
@@ -114,6 +118,11 @@ export class KOLRecord {
     this.twitterRate = data.twitterRate || data.twitter_rate || 0;
     this.threadRate = data.threadRate || data.thread_rate || 0;
     this.blogRate = data.blogRate || data.blog_rate || 0;
+  this.youtubeRate = data.youtubeRate || data.youtube_rate || 0;
+  this.lemon8Rate = data.lemon8Rate || data.lemon8_rate || 0;
+  this.xhsRate = data.xhsRate || data.xhs_rate || 0;
+  this.rating = data.rating || data.stars || 0; // 0-5 stars
+  this.sellingPrice = data.sellingPrice || data.selling_price || 0; // internal use
     this.tier = data.tier || TIERS[0];
     this.gender = data.gender || GENDERS[0];
     this.niches = data.niches || [];
@@ -165,6 +174,9 @@ export class KOLRecord {
       twitter: this.twitter,
       thread: this.thread,
       blog: this.blog,
+  youtube: this.youtube,
+  lemon8: this.lemon8,
+  xhs: this.xhs,
       rate: this.rate,
       instagramRate: this.instagramRate,
       tiktokRate: this.tiktokRate,
@@ -172,6 +184,11 @@ export class KOLRecord {
       twitterRate: this.twitterRate,
       threadRate: this.threadRate,
       blogRate: this.blogRate,
+  youtubeRate: this.youtubeRate,
+  lemon8Rate: this.lemon8Rate,
+  xhsRate: this.xhsRate,
+  rating: this.rating,
+  sellingPrice: this.sellingPrice,
       tier: this.tier,
       gender: this.gender,
       niches: this.niches,
