@@ -91,6 +91,7 @@ const KOLForm = ({
       setFormData({
         ...initialData,
         picUserId: initialData.picUserId || initialData.pic_user_id || null,
+        picUserEmail: initialData.picUserEmail || initialData.pic_user_email || null,
         customFields: initialData.custom_fields || initialData.customFields || {}
       });
     }
@@ -146,6 +147,20 @@ const KOLForm = ({
     setFormData(prev => ({ ...prev, [field]: processedValue }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handlePicSelect = (userId) => {
+    const id = userId ? parseInt(userId, 10) : null;
+    const selected = users.find(u => u.id === id);
+    setFormData(prev => ({ 
+      ...prev, 
+      picUserId: id,
+      pic: selected ? selected.name : prev.pic,
+      picUserEmail: selected ? selected.email : prev.picUserEmail || null
+    }));
+    if (errors.pic) {
+      setErrors(prev => ({ ...prev, pic: '' }));
     }
   };
 
@@ -1144,7 +1159,7 @@ const KOLForm = ({
                       borderColor="rgba(220, 38, 38, 0.2)"
                       borderRadius="lg"
                       value={formData.picUserId || ''}
-                      onChange={(e) => handleInputChange('picUserId', e.target.value ? parseInt(e.target.value) : null)}
+                      onChange={(e) => handlePicSelect(e.target.value)}
                       _focus={{
                         borderColor: 'red.400',
                         boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
@@ -1160,6 +1175,9 @@ const KOLForm = ({
                         <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                       ))}
                     </Select>
+                    {formData.picUserEmail && (
+                      <Text fontSize="xs" color="gray.600" mt={2}>{formData.picUserEmail}</Text>
+                    )}
                     {/* If user selects Other, allow manual pic name in the existing pic field */}
                     <Input
                       mt={2}

@@ -502,7 +502,7 @@ const KOLTableRow = memo(({
     </Td>
 
     {/* PIC */}
-    <Td px={6} py={5}>
+      <Td px={6} py={5}>
       <Badge 
         colorScheme="green" 
         variant="subtle"
@@ -513,7 +513,7 @@ const KOLTableRow = memo(({
         fontSize="sm"
         noOfLines={1}
       >
-        {kol.pic || 'N/A'}
+        {kol.picUserName || kol.pic || 'N/A'}
       </Badge>
     </Td>
 
@@ -1867,7 +1867,7 @@ const SocialMediaKOL = () => {
                       <Box>
                         <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>PIC</Text>
                         <Text fontSize="sm" fontWeight="600" color="gray.800">
-                          {viewingKOL.pic || 'N/A'}
+                          {viewingKOL.picUserName || viewingKOL.pic || 'N/A'}
                         </Text>
                       </Box>
                     </SimpleGrid>

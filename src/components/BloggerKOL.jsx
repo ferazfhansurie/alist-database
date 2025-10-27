@@ -911,7 +911,7 @@ const BloggerKOL = () => {
                           fontSize="sm"
                           noOfLines={1}
                         >
-                          {kol.pic}
+                          {kol.picUserName || kol.pic}
                         </Badge>
                       </Td>
                       <Td px={6} py={5}>
@@ -1249,7 +1249,7 @@ const BloggerKOL = () => {
                       <Box>
                         <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>PIC</Text>
                         <Text fontSize="sm" fontWeight="600" color="gray.800">
-                          {viewingKOL.pic || 'N/A'}
+                          {viewingKOL.picUserName || viewingKOL.pic || 'N/A'}
                         </Text>
                       </Box>
                     </SimpleGrid>
