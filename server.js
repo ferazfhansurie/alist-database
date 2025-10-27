@@ -156,6 +156,22 @@ async function initializeDatabase() {
       );
     `);
 
+    // Drop the enum type constraint and convert pic column to varchar
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        -- First alter the column to drop the enum constraint
+        ALTER TABLE kols 
+        ALTER COLUMN pic TYPE VARCHAR(255) USING pic::text;
+
+        -- Then drop the enum type
+        DROP TYPE IF EXISTS pic;
+      EXCEPTION
+        WHEN others THEN
+          NULL;
+      END $$;
+    `);
+
     // Add platform-specific rate columns to existing kols table (migration)
     await pool.query(`
       ALTER TABLE kols
