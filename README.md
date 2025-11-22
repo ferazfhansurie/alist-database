@@ -61,8 +61,8 @@ npm run dev
 
 The application will be available at:
 - Frontend: http://localhost:5173
-- Backend API: https://alist.jutateknologi.com
-- Health Check: https://alist.jutateknologi.com/api/health
+- Backend API: http://localhost:3001
+- Health Check: http://localhost:3001/api/health
 
 ## Database Schema
 

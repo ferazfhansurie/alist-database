@@ -3,7 +3,7 @@
 
 const createUser = async () => {
   try {
-    const response = await fetch('https://alist.jutateknologi.com/api/auth/setup', {
+    const response = await fetch('http://localhost:3001/api/auth/setup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

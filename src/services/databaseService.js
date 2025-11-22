@@ -253,15 +253,22 @@ class DatabaseService {
         INSERT INTO kols (
           name, instagram, tiktok, facebook, twitter, thread, blog,
           rate, tier, gender, hair_style, race, address, contact_number,
-          rate_details, pic, kol_type, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+          rate_details, pic, kol_type, notes,
+          instagram_rate, tiktok_rate, facebook_rate, twitter_rate,
+          thread_rate, blog_rate, youtube_rate, xhs_rate, lemon8_rate,
+          selling_price, rate_updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
         RETURNING *
       `, [
         kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
         kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
         kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
         kolData.address, kolData.contactNumber, kolData.rateDetails,
-        kolData.pic, kolData.kolType, kolData.notes
+        kolData.pic, kolData.kolType, kolData.notes,
+        kolData.instagramrate || 0, kolData.tiktokrate || 0, kolData.facebookrate || 0,
+        kolData.twitterrate || 0, kolData.threadrate || 0, kolData.blograte || 0,
+        kolData.youtuberate || 0, kolData.xhsrate || 0, kolData.lemon8rate || 0,
+        kolData.sellingPrice || 0, kolData.rateUpdatedAt || null
       ]);
       
       const newKOL = kolResult.rows[0];
@@ -320,15 +327,25 @@ class DatabaseService {
           twitter = $5, thread = $6, blog = $7, rate = $8,
           tier = $9, gender = $10, hair_style = $11, race = $12,
           address = $13, contact_number = $14, rate_details = $15,
-          pic = $16, kol_type = $17, notes = $18, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $19
+          pic = $16, kol_type = $17, notes = $18,
+          instagram_rate = $19, tiktok_rate = $20, facebook_rate = $21,
+          twitter_rate = $22, thread_rate = $23, blog_rate = $24,
+          youtube_rate = $25, xhs_rate = $26, lemon8_rate = $27,
+          selling_price = $28, rate_updated_at = $29,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $30
         RETURNING *
       `, [
         kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
         kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
         kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
         kolData.address, kolData.contactNumber, kolData.rateDetails,
-        kolData.pic, kolData.kolType, kolData.notes, id
+        kolData.pic, kolData.kolType, kolData.notes,
+        kolData.instagramrate || 0, kolData.tiktokrate || 0, kolData.facebookrate || 0,
+        kolData.twitterrate || 0, kolData.threadrate || 0, kolData.blograte || 0,
+        kolData.youtuberate || 0, kolData.xhsrate || 0, kolData.lemon8rate || 0,
+        kolData.sellingPrice || 0, kolData.rateUpdatedAt || null,
+        id
       ]);
       
       if (updateResult.rows.length === 0) {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const DatabaseContext = createContext();
 
@@ -49,7 +49,7 @@ export const DatabaseProvider = ({ children }) => {
 
   // Transform database fields from snake_case to camelCase
   const transformKOLData = (kol) => {
-    return {
+    const transformed = {
       id: kol.id,
       name: kol.name,
       instagram: kol.instagram,
@@ -61,46 +61,53 @@ export const DatabaseProvider = ({ children }) => {
       lemon8: kol.lemon8,
       xhs: kol.xhs,
       blog: kol.blog,
-      rate: kol.rate,
-      instagramRate: kol.instagramRate,
-      tiktokRate: kol.tiktokRate,
-      facebookRate: kol.facebookRate,
-      twitterRate: kol.twitterRate,
-      threadRate: kol.threadRate,
-      blogRate: kol.blogRate,
-      youtubeRate: kol.youtubeRate,
-      lemon8Rate: kol.lemon8Rate,
-      xhsRate: kol.xhsRate,
-      rating: kol.rating,
-      sellingPrice: kol.selling_price || kol.sellingPrice || 0,
+      rate: parseFloat(kol.rate) || 0,
+      // PostgreSQL returns aliases in all lowercase - parse as numbers
+      instagramRate: parseFloat(kol.instagramrate || kol.instagramRate || kol.instagram_rate) || 0,
+      tiktokRate: parseFloat(kol.tiktokrate || kol.tiktokRate || kol.tiktok_rate) || 0,
+      facebookRate: parseFloat(kol.facebookrate || kol.facebookRate || kol.facebook_rate) || 0,
+      twitterRate: parseFloat(kol.twitterrate || kol.twitterRate || kol.twitter_rate) || 0,
+      threadRate: parseFloat(kol.threadrate || kol.threadRate || kol.thread_rate) || 0,
+      blogRate: parseFloat(kol.blograte || kol.blogRate || kol.blog_rate) || 0,
+      youtubeRate: parseFloat(kol.youtuberate || kol.youtubeRate || kol.youtube_rate) || 0,
+      lemon8Rate: parseFloat(kol.lemon8rate || kol.lemon8Rate || kol.lemon8_rate) || 0,
+      xhsRate: parseFloat(kol.xhsrate || kol.xhsRate || kol.xhs_rate) || 0,
+      rating: parseInt(kol.rating) || 0,
+      sellingPrice: parseFloat(kol.sellingprice || kol.sellingPrice || kol.selling_price) || 0,
       tier: kol.tier,
       gender: kol.gender,
       niches: kol.niches || [],
-      hairStyle: kol.hair_style,
+      hairStyle: kol.hair_style || kol.hairStyle || kol.hairstyle,
       race: kol.race,
       address: kol.address,
-      contactNumber: kol.contact_number,
-      submissionDate: kol.submission_date,
-      rateDetails: kol.rate_details,
-  pic: kol.pic,
-  picUserId: kol.pic_user_id || kol.picUserId || null,
-  picUserName: kol.pic_user_name || kol.picUserName || null,
-      kolType: kol.kol_type,
+      contactNumber: kol.contact_number || kol.contactNumber || kol.contactnumber,
+      submissionDate: kol.submission_date || kol.submissionDate || kol.submissiondate,
+      rateDetails: kol.rate_details || kol.rateDetails || kol.ratedetails,
+      pic: kol.pic,
+      picUserId: kol.picuserid || kol.picUserId || kol.pic_user_id || null,
+      picUserName: kol.picusername || kol.picUserName || kol.pic_user_name || null,
+      kolType: kol.kol_type || kol.kolType || kol.koltype,
       notes: kol.notes,
-      isActive: kol.is_active,
-      createdAt: kol.created_at,
-      updatedAt: kol.updated_at
+      isActive: kol.is_active !== undefined ? kol.is_active : (kol.isActive !== undefined ? kol.isActive : kol.isactive),
+      createdAt: kol.created_at || kol.createdAt || kol.createdat,
+      updatedAt: kol.updated_at || kol.updatedAt || kol.updatedat
     };
+    
+
+    
+    return transformed;
   };
 
   // Load all KOLs
-  const loadKOLs = async () => {
+  const loadKOLs = useCallback(async () => {
     try {
-      const response = await fetch('https://alist.jutateknologi.com/api/kols');
+      console.log('🌐 API CALL - loadKOLs');
+      const response = await fetch('http://localhost:3001/api/kols');
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs');
       }
       const data = await response.json();
+      console.log(data)
       // Transform the data to match frontend expectations
       const transformedData = data.map(transformKOLData);
       setKols(transformedData);
@@ -110,16 +117,18 @@ export const DatabaseProvider = ({ children }) => {
       setError(err.message);
       return []; // Return empty array on error
     }
-  };
+  }, []);
 
   // Load KOLs by type
-  const loadKOLsByType = async (kolType) => {
+  const loadKOLsByType = useCallback(async (kolType) => {
     try {
-      const response = await fetch(`https://alist.jutateknologi.com/api/kols/type/${kolType}`);
+    
+      const response = await fetch(`http://localhost:3001/api/kols/type/${kolType}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs by type');
       }
       const data = await response.json();
+  
       // Transform the data to match frontend expectations
       return data.map(transformKOLData);
     } catch (err) {
@@ -127,12 +136,12 @@ export const DatabaseProvider = ({ children }) => {
       setError(err.message);
       return [];
     }
-  };
+  }, []);
 
   // Load statistics
   const loadStats = async () => {
     try {
-      const response = await fetch('https://alist.jutateknologi.com/api/kols/stats');
+      const response = await fetch('http://localhost:3001/api/kols/stats');
       if (!response.ok) {
         throw new Error('Failed to fetch stats');
       }
@@ -155,7 +164,7 @@ export const DatabaseProvider = ({ children }) => {
   // Create new KOL
   const createKOL = async (kolData) => {
     try {
-      const response = await fetch('https://alist.jutateknologi.com/api/kols', {
+      const response = await fetch('http://localhost:3001/api/kols', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +191,7 @@ export const DatabaseProvider = ({ children }) => {
   // Update KOL
   const updateKOL = async (id, kolData) => {
     try {
-      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/kols/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +218,7 @@ export const DatabaseProvider = ({ children }) => {
   // Delete KOL
   const deleteKOL = async (id) => {
     try {
-      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/kols/${id}`, {
         method: 'DELETE',
       });
       
@@ -227,26 +236,45 @@ export const DatabaseProvider = ({ children }) => {
   };
 
   // Get KOL by ID
-  const getKOLById = async (id) => {
+  const getKOLById = useCallback(async (id) => {
     try {
-      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`);
+      console.log('🌐 API CALL - getKOLById:', id);
+      const response = await fetch(`http://localhost:3001/api/kols/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOL');
       }
       const data = await response.json();
+      console.log('📥 API RESPONSE - getKOLById raw data:', {
+        id: data.id,
+        name: data.name,
+        rates: {
+          instagramrate: data.instagramrate,
+          tiktokrate: data.tiktokrate,
+          facebookrate: data.facebookrate,
+          instagramRate: data.instagramRate,
+          tiktokRate: data.tiktokRate,
+          facebookRate: data.facebookRate
+        }
+      });
       // Transform the data to match frontend expectations
-      return transformKOLData(data);
+      const transformed = transformKOLData(data);
+      console.log('🟢 EDIT VIEW - Transformed data for', data.name, ':', {
+        instagramRate: transformed.instagramRate,
+        tiktokRate: transformed.tiktokRate,
+        facebookRate: transformed.facebookRate
+      });
+      return transformed;
     } catch (err) {
       console.error('Error getting KOL by ID:', err);
       setError(err.message);
       return null;
     }
-  };
+  }, []);
 
   // Get all niches
   const getNiches = async () => {
     try {
-      const response = await fetch('https://alist.jutateknologi.com/api/niches');
+      const response = await fetch('http://localhost:3001/api/niches');
       if (!response.ok) {
         throw new Error('Failed to fetch niches');
       }

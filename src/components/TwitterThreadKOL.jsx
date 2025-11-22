@@ -31,7 +31,9 @@ import {
   useColorModeValue,
   SimpleGrid,
   Spinner,
-  Center
+  Center,
+  Checkbox,
+  Tooltip
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { 
@@ -66,33 +68,48 @@ const KOLTableRow = memo(({
   getTierColor,
   formatDate,
   canEdit,
-  canDelete
+  canDelete,
+  isSelected,
+  onSelect
 }) => {
   // Memoize expensive calculations
-  const instagramRate = useMemo(() => parseFloat(kol.instagramRate) || 0, [kol.instagramRate]);
-  const tiktokRate = useMemo(() => parseFloat(kol.tiktokRate) || 0, [kol.tiktokRate]);
-  const facebookRate = useMemo(() => parseFloat(kol.facebookRate) || 0, [kol.facebookRate]);
+  const generalRate = useMemo(() => parseFloat(kol.rate) || 0, [kol.rate]);
   const twitterRate = useMemo(() => parseFloat(kol.twitterRate) || 0, [kol.twitterRate]);
   const threadRate = useMemo(() => parseFloat(kol.threadRate) || 0, [kol.threadRate]);
-  const blogRate = useMemo(() => parseFloat(kol.blogRate) || 0, [kol.blogRate]);
+  
+  // Show rate for filled platforms only
+  const filledPlatforms = useMemo(() => {
+    const platforms = [];
+    if (kol.twitter) platforms.push({ name: 'Twitter', rate: twitterRate || generalRate, icon: 'twitter', color: 'blue' });
+    if (kol.thread) platforms.push({ name: 'Thread', rate: threadRate || generalRate, icon: 'thread', color: 'purple' });
+    return platforms;
+  }, [kol.twitter, kol.thread, twitterRate, threadRate, generalRate]);
   
   const hasAnyRates = useMemo(() => 
-    instagramRate > 0 || tiktokRate > 0 || facebookRate > 0 || 
-    twitterRate > 0 || threadRate > 0 || blogRate > 0, 
-    [instagramRate, tiktokRate, facebookRate, twitterRate, threadRate, blogRate]
+    generalRate > 0 || twitterRate > 0 || threadRate > 0, 
+    [generalRate, twitterRate, threadRate]
   );
 
   return (
   <Tr 
-    _hover={{ bg: 'rgba(254, 226, 226, 0.4)', transform: 'scale(1.01)' }}
-    fontSize="sm"
+    _hover={{ bg: 'gray.50' }}
+    bg={isSelected ? 'blue.50' : 'white'}
     borderBottom="1px solid"
-    borderColor="rgba(220, 38, 38, 0.15)"
-    minHeight="120px"
-    transition="all 0.2s ease"
+    borderColor="gray.200"
+    transition="all 0.15s ease"
   >
+    {/* Checkbox */}
+    <Td px={3} py={3} w="40px">
+      <Checkbox
+        isChecked={isSelected}
+        onChange={(e) => onSelect(kol.id, e.target.checked)}
+        colorScheme="blue"
+        size="lg"
+      />
+    </Td>
+
     {/* KOL Details */}
-    <Td px={6} py={5} minW="150px">
+    <Td px={3} py={3} minW="150px">
       <VStack align="start" spacing={2}>
         <Text fontWeight="700" color="gray.800" fontSize="md" wordBreak="break-word">
           {kol.name || 'No Name'}
@@ -157,66 +174,43 @@ const KOLTableRow = memo(({
     <Td px={6} py={5} minW="280px">
       <VStack align="start" spacing={3}>
         <VStack spacing={2} align="start" w="full">
-          {twitterRate > 0 && (
+          {filledPlatforms.map((platform) => (
             <Box 
-              bg="rgba(29, 161, 242, 0.1)" 
+              key={platform.name}
+              bg={platform.color === 'blue' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(147, 51, 234, 0.1)'}
               p={3} 
               borderRadius="lg" 
               border="1px solid" 
-              borderColor="blue.200"
+              borderColor={platform.color === 'blue' ? 'blue.200' : 'purple.200'}
               w="full"
-              _hover={{ bg: 'rgba(29, 161, 242, 0.15)', transform: 'translateY(-1px)' }}
+              _hover={{ transform: 'translateY(-1px)' }}
               transition="all 0.2s ease"
             >
               <HStack spacing={3} justify="space-between" w="full">
                 <HStack spacing={2}>
-                  <Box p={1} bg="blue.100" borderRadius="md">
-                    <Twitter size={16} color="#1DA1F2" />
+                  <Box p={1} bg={`${platform.color}.100`} borderRadius="md">
+                    {platform.icon === 'twitter' && <Twitter size={16} color="#1DA1F2" />}
+                    {platform.icon === 'thread' && <Text fontSize="sm">🧵</Text>}
                   </Box>
-                  <Text fontSize="sm" color="blue.700" fontWeight="700">Twitter</Text>
+                  <Text fontSize="sm" color={`${platform.color}.700`} fontWeight="700">{platform.name}</Text>
                 </HStack>
-                <Text fontSize="lg" color="blue.800" fontWeight="800" fontFamily="mono">
-                  RM{twitterRate.toLocaleString()}
+                <Text fontSize="lg" color={`${platform.color}.800`} fontWeight="800" fontFamily="mono">
+                  RM{platform.rate.toLocaleString()}
                 </Text>
               </HStack>
             </Box>
-          )}
-          {threadRate > 0 && (
-            <Box 
-              bg="rgba(147, 51, 234, 0.1)" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor="purple.200"
-              w="full"
-              _hover={{ bg: 'rgba(147, 51, 234, 0.15)', transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg="purple.100" borderRadius="md">
-                    <Text fontSize="sm">🧵</Text>
-                  </Box>
-                  <Text fontSize="sm" color="purple.700" fontWeight="700">Threads</Text>
-                </HStack>
-                <Text fontSize="lg" color="purple.800" fontWeight="800" fontFamily="mono">
-                  RM{threadRate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          )}
-          {!hasAnyRates && (
+          ))}
+          {filledPlatforms.length === 0 && generalRate === 0 && (
             <Box 
               bg="gray.50" 
-              p={4} 
+              p={3} 
               borderRadius="lg" 
               border="1px dashed" 
               borderColor="gray.300"
               w="full"
-              textAlign="center"
             >
-              <Text fontSize="sm" color="gray.500" fontStyle="italic" fontWeight="500">
-                No platform rates set
+              <Text fontSize="xs" color="gray.400" fontStyle="italic" textAlign="center">
+                No rates set
               </Text>
             </Box>
           )}
@@ -238,6 +232,20 @@ const KOLTableRow = memo(({
       >
         {kol.tier}
       </Badge>
+    </Td>
+
+    {/* Rating */}
+    <Td px={6} py={5}>
+      <HStack spacing={1}>
+        <Text fontSize="lg" fontWeight="800" color="yellow.500">
+          {'⭐'.repeat(kol.rating || 0)}
+        </Text>
+        {(!kol.rating || kol.rating === 0) && (
+          <Text fontSize="sm" color="gray.400" fontStyle="italic">
+            No rating
+          </Text>
+        )}
+      </HStack>
     </Td>
 
     {/* Gender */}
@@ -327,21 +335,9 @@ const KOLTableRow = memo(({
     </Td>
 
     {/* Contact */}
-    <Td px={6} py={5} minW="150px">
-      <Text 
-        fontSize="sm" 
-        fontFamily="mono" 
-        fontWeight="700"
-        color="gray.800"
-        bg="gray.50"
-        px={3}
-        py={2}
-        borderRadius="md"
-        border="1px solid"
-        borderColor="gray.200"
-        wordBreak="break-all"
-      >
-        {kol.contactNumber || 'N/A'}
+    <Td px={3} py={3} minW="120px">
+      <Text fontSize="xs" fontFamily="mono" color="gray.700" noOfLines={1}>
+        {kol.contact_number || kol.contactNumber || 'N/A'}
       </Text>
     </Td>
 
@@ -384,57 +380,52 @@ const KOLTableRow = memo(({
       </Badge>
     </Td>
 
-    {/* Actions */}
-    <Td px={6} py={5}>
-      <HStack spacing={2}>
-        <IconButton
-          size="sm"
-          icon={<Eye size={16} />}
-          onClick={() => onView(kol)}
-          colorScheme="blue"
-          variant="outline"
-          aria-label="View KOL"
-          borderRadius="lg"
-          _hover={{
-            bg: 'blue.50',
-            transform: 'scale(1.1)',
-            borderColor: 'blue.400'
-          }}
-          transition="all 0.2s ease"
-        />
-        {canEdit && (
+    {/* Actions - Sticky Right */}
+    <Td 
+      px={3} 
+      py={3} 
+      position="sticky" 
+      right={0} 
+      bg={isSelected ? 'blue.50' : 'white'}
+      boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
+      borderLeft="1px solid"
+      borderColor="gray.200"
+      _hover={{ bg: isSelected ? 'blue.50' : 'gray.50' }}
+    >
+      <HStack spacing={1}>
+        <Tooltip label="View Details" fontSize="xs">
           <IconButton
             size="sm"
-            icon={<Edit size={16} />}
-            onClick={() => onEdit(kol)}
-            colorScheme="green"
-            variant="outline"
-            aria-label="Edit KOL"
-            borderRadius="lg"
-            _hover={{
-              bg: 'green.50',
-              transform: 'scale(1.1)',
-              borderColor: 'green.400'
-            }}
-            transition="all 0.2s ease"
+            icon={<Eye size={14} />}
+            onClick={() => onView(kol)}
+            colorScheme="blue"
+            variant="ghost"
+            aria-label="View"
           />
+        </Tooltip>
+        {canEdit && (
+          <Tooltip label="Edit" fontSize="xs">
+            <IconButton
+              size="sm"
+              icon={<Edit size={14} />}
+              onClick={() => onEdit(kol)}
+              colorScheme="green"
+              variant="ghost"
+              aria-label="Edit"
+            />
+          </Tooltip>
         )}
         {canDelete && (
-          <IconButton
-            size="sm"
-            icon={<Trash2 size={16} />}
-            onClick={() => onDelete(kol.id)}
-            colorScheme="red"
-            variant="outline"
-            aria-label="Delete KOL"
-            borderRadius="lg"
-            _hover={{
-              bg: 'red.50',
-              transform: 'scale(1.1)',
-              borderColor: 'red.400'
-            }}
-            transition="all 0.2s ease"
-          />
+          <Tooltip label="Delete" fontSize="xs">
+            <IconButton
+              size="sm"
+              icon={<Trash2 size={14} />}
+              onClick={() => onDelete(kol.id)}
+              colorScheme="red"
+              variant="ghost"
+              aria-label="Delete"
+            />
+          </Tooltip>
         )}
       </HStack>
     </Td>
@@ -454,6 +445,7 @@ const TwitterThreadKOL = () => {
   const [selectedRace, setSelectedRace] = useState('All Races');
   const [selectedHijab, setSelectedHijab] = useState('All');
   const [selectedPic, setSelectedPic] = useState('All PICs');
+  const [selectedRating, setSelectedRating] = useState('All Ratings');
   const [editingKOL, setEditingKOL] = useState(null);
   const [viewingKOL, setViewingKOL] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -462,6 +454,7 @@ const TwitterThreadKOL = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const searchTimeoutRef = useRef(null);
+  const [selectedKOLs, setSelectedKOLs] = useState(new Set());
   
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
@@ -576,8 +569,13 @@ const TwitterThreadKOL = () => {
       filtered = filtered.filter(kol => kol.pic === selectedPic);
     }
 
+    if (selectedRating !== 'All Ratings') {
+      const ratingValue = parseInt(selectedRating);
+      filtered = filtered.filter(kol => (kol.rating || 0) === ratingValue);
+    }
+
     return filtered;
-  }, [kolData, debouncedSearchTerm, selectedTier, selectedNiche, selectedState, selectedGender, selectedRace, selectedHijab, selectedPic]);
+  }, [kolData, debouncedSearchTerm, selectedTier, selectedNiche, selectedState, selectedGender, selectedRace, selectedHijab, selectedPic, selectedRating]);
 
   // Pagination logic
   const paginatedData = useMemo(() => {
@@ -740,7 +738,100 @@ const TwitterThreadKOL = () => {
     setSelectedRace('All Races');
     setSelectedHijab('All');
     setSelectedPic('All PICs');
+    setSelectedRating('All Ratings');
   }, []);
+
+  // Bulk selection handlers
+  const handleSelectAll = useCallback((checked) => {
+    if (checked) {
+      const allIds = new Set(paginatedData.map(kol => kol.id));
+      setSelectedKOLs(allIds);
+    } else {
+      setSelectedKOLs(new Set());
+    }
+  }, [paginatedData]);
+
+  const handleSelectKOL = useCallback((kolId, checked) => {
+    setSelectedKOLs(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(kolId);
+      } else {
+        newSet.delete(kolId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedKOLs.size === 0) {
+      toast({
+        title: 'No Selection',
+        description: 'Please select KOLs to delete',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${selectedKOLs.size} selected KOL(s)?`)) {
+      try {
+        const deletePromises = Array.from(selectedKOLs).map(id => deleteKOL(id));
+        await Promise.all(deletePromises);
+        
+        const allKOLs = await loadKOLs();
+        if (allKOLs && Array.isArray(allKOLs)) {
+          const twitterKOLs = allKOLs.filter(kol => 
+            kol.kolType === 'twitter-thread' || 
+            kol.kolType === 'twitter' || 
+            kol.kolType === 'thread' ||
+            kol.twitter || 
+            kol.thread
+          );
+          setKolData(twitterKOLs);
+        }
+        
+        setSelectedKOLs(new Set());
+        toast({
+          title: 'Deleted!',
+          description: `Successfully deleted ${selectedKOLs.size} KOL(s)`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error!',
+          description: 'Failed to delete some KOL records',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }
+  }, [selectedKOLs, deleteKOL, loadKOLs, toast]);
+
+  const handleGenerateProposal = useCallback(() => {
+    if (selectedKOLs.size === 0) {
+      toast({
+        title: 'No Selection',
+        description: 'Please select KOLs to generate proposal',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    toast({
+      title: 'Coming Soon',
+      description: `Proposal generation for ${selectedKOLs.size} KOL(s) will be available soon`,
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
+  }, [selectedKOLs, toast]);
 
   return (
     <Box
@@ -1072,207 +1163,136 @@ const TwitterThreadKOL = () => {
               </Flex>
             </Box>
 
-            {/* Data Table - Main Focus */}
+            {/* Pagination - Above Table */}
+            {totalPages > 1 && (
+              <Flex justify="space-between" align="center" bg="white" p={3} borderRadius="lg" boxShadow="sm">
+                <Text fontSize="sm" color="gray.600">
+                  Page {currentPage} of {totalPages} ({filteredData.length} total results)
+                </Text>
+                
+                <HStack spacing={2}>
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    isDisabled={currentPage === 1}
+                    variant="outline"
+                  >
+                    First
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    isDisabled={currentPage === 1}
+                    variant="outline"
+                  >
+                    Previous
+                  </Button>
+                  
+                  <HStack spacing={1}>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      if (pageNum > totalPages) return null;
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          size="sm"
+                          variant={currentPage === pageNum ? "solid" : "outline"}
+                          colorScheme={currentPage === pageNum ? "blue" : "gray"}
+                          onClick={() => setCurrentPage(pageNum)}
+                          minW="40px"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </HStack>
+                  
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    isDisabled={currentPage === totalPages}
+                    variant="outline"
+                  >
+                    Next
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    isDisabled={currentPage === totalPages}
+                    variant="outline"
+                  >
+                    Last
+                  </Button>
+                </HStack>
+              </Flex>
+            )}
+
+            {/* Data Table - Main Focus with Fixed Height */}
             <Box 
-              overflowX="auto" 
               bg="white"
-              borderRadius="xl"
-              boxShadow="0 4px 20px rgba(0, 0, 0, 0.1)"
-              border="1px solid"
-              borderColor="gray.100"
+              borderRadius="lg"
+              boxShadow="sm"
+              overflow="hidden"
+              height="calc(100vh - 420px)"
+              display="flex"
+              flexDirection="column"
             >
-              <Table variant="simple" size="lg">
-                <Thead position="sticky" top={0} bg="rgba(220, 38, 38, 0.15)" zIndex={1} borderBottom="2px solid" borderColor="rgba(220, 38, 38, 0.3)">
+              <Box overflowX="auto" overflowY="auto" flex="1">
+              <Table variant="simple" size="sm">
+                <Thead position="sticky" top={0} bg="gray.100" zIndex={2}>
                   <Tr>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="150px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      KOL Details
+                    <Th w="40px" px={3}>
+                      <Checkbox
+                        isChecked={paginatedData.length > 0 && selectedKOLs.size === paginatedData.length}
+                        isIndeterminate={selectedKOLs.size > 0 && selectedKOLs.size < paginatedData.length}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        colorScheme="blue"
+                        size="lg"
+                      />
                     </Th>
+                    <Th px={3}>Name</Th>
+                    <Th px={3}>Platforms</Th>
+                    <Th px={3}>Rates (RM)</Th>
+                    <Th px={3}>Tier</Th>
+                    <Th px={3}>Rating</Th>
+                    <Th px={3}>Gender</Th>
+                    <Th px={3}>Niche</Th>
+                    <Th px={3}>Hair</Th>
+                    <Th px={3}>Race</Th>
+                    <Th px={3}>Location</Th>
+                    <Th px={3}>Contact</Th>
+                    <Th px={3}>Date</Th>
+                    <Th px={3}>Rate Details</Th>
+                    <Th px={3}>PIC</Th>
                     <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="120px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Platforms
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="280px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Platform Rates (RM)
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="100px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Tier
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="90px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Gender
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="180px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Niche
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="120px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Hair Style
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="90px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Race
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="120px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Address
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="150px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Contact
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="100px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Date
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="200px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Rate Details
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="90px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      PIC
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="130px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
+                      position="sticky" 
+                      right={0} 
+                      bg="gray.100" 
+                      px={3}
+                      boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
                     >
                       Actions
                     </Th>
                   </Tr>
                 </Thead>
-                <Tbody>
+              <Tbody>
                   {isLoading ? (
                     <Tr>
-                      <Td colSpan={13} py={20}>
+                      <Td colSpan={16} py={20}>
                         <Center>
-                          <VStack spacing={4}>
-                            <Spinner size="xl" color="red.500" thickness="4px" />
-                            <Text color="gray.600" fontWeight="500">
-                              Loading KOLs...
-                          </Text>
+                          <VStack spacing={3}>
+                            <Spinner size="xl" color="blue.500" thickness="3px" />
+                            <Text color="gray.600">Loading KOLs...</Text>
                         </VStack>
                         </Center>
                       </Td>
                     </Tr>
                   ) : paginatedData.length === 0 ? (
                     <Tr>
-                      <Td colSpan={13} py={20}>
+                      <Td colSpan={16} py={20}>
                         <Center>
-                          <VStack spacing={4}>
+                          <VStack spacing={3}>
                             <Text fontSize="lg" color="gray.500" fontWeight="500">
                               No KOLs found
                               </Text>
@@ -1296,12 +1316,15 @@ const TwitterThreadKOL = () => {
                         formatDate={formatDate}
                         canEdit={canEdit()}
                         canDelete={canDelete()}
+                        isSelected={selectedKOLs.has(kol.id)}
+                        onSelect={handleSelectKOL}
                       />
                     ))
                   )}
                 </Tbody>
               </Table>
             </Box>
+          </Box>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (

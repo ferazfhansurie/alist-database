@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
+import proposalService from './services/proposalService.js';
 const { Pool } = pg;
 
 const app = express();
@@ -65,7 +66,7 @@ async function initializeDatabase() {
 
     await pool.query(`
       DO $$ BEGIN
-        CREATE TYPE tier AS ENUM ('Celebrity', 'Tier 1 (Premium)', 'Tier 2 (Mid-tier)', 'Tier 3 (Emerging)', 'Tier 4 (Micro)', 'NANO', 'MICRO', 'MACRO', 'MEGA', 'MID-TIER');
+        CREATE TYPE tier AS ENUM ('Celebrity', 'Tier 4 (Micro)', 'NANO', 'MICRO', 'MACRO', 'MEGA', 'MID-TIER', 'Affiliate');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
@@ -253,7 +254,17 @@ async function initializeDatabase() {
         ('PROFESSIONAL/ MEDICAL'),
         ('EDUCATION'),
         ('SKINCARE'),
-        ('AUTOMOTIVE')
+        ('AUTOMOTIVE'),
+        ('Videographer'),
+        ('MUA'),
+        ('Voice Over Talent'),
+        ('Model'),
+        ('Photographer'),
+        ('Stylist'),
+        ('Studio'),
+        ('Hairdo'),
+        ('Fashion Designer'),
+        ('MC/Host')
       ON CONFLICT (name) DO NOTHING;
     `);
 
@@ -310,7 +321,7 @@ async function migrateSampleData() {
     }
 
     console.log('Starting migration of sample data...');
-    
+
     for (const sampleKOL of sampleKOLData) {
       try {
         // Insert KOL
@@ -328,9 +339,9 @@ async function migrateSampleData() {
           sampleKOL.address, sampleKOL.contactNumber, sampleKOL.rateDetails,
           sampleKOL.pic, sampleKOL.kolType
         ]);
-        
+
         const newKOL = kolResult.rows[0];
-        
+
         // Insert niches
         if (sampleKOL.niches && sampleKOL.niches.length > 0) {
           for (const nicheName of sampleKOL.niches) {
@@ -339,7 +350,7 @@ async function migrateSampleData() {
               'SELECT id FROM niches WHERE name = $1',
               [nicheName]
             );
-            
+
             let nicheId;
             if (nicheResult.rows.length === 0) {
               const newNicheResult = await pool.query(
@@ -350,7 +361,7 @@ async function migrateSampleData() {
             } else {
               nicheId = nicheResult.rows[0].id;
             }
-            
+
             // Link KOL to niche
             await pool.query(
               'INSERT INTO kol_niches (kol_id, niche_id) VALUES ($1, $2)',
@@ -358,13 +369,13 @@ async function migrateSampleData() {
             );
           }
         }
-        
+
         console.log(`Migrated KOL: ${sampleKOL.name}`);
       } catch (error) {
         console.error(`Error migrating KOL ${sampleKOL.name}:`, error);
       }
     }
-    
+
     console.log('Migration completed successfully');
   } catch (error) {
     console.error('Error during migration:', error);
@@ -411,12 +422,12 @@ app.get('/api/kols', async (req, res) => {
        k.twitter_rate, k.thread_rate, k.blog_rate, k.youtube, k.lemon8, k.xhs, k.youtube_rate, k.lemon8_rate, k.xhs_rate, k.rating, k.selling_price, k.pic_user_id, u.name
       ORDER BY k.created_at DESC
     `);
-    
+
     const kols = result.rows.map(row => ({
       ...row,
       niches: row.niches.filter(niche => niche !== null)
     }));
-    
+
     res.json(kols);
   } catch (error) {
     console.error('Error fetching KOLs:', error);
@@ -463,7 +474,7 @@ app.get('/api/kols/type/:type', async (req, res) => {
        k.twitter_rate, k.thread_rate, k.blog_rate, k.youtube, k.lemon8, k.xhs, k.youtube_rate, k.lemon8_rate, k.xhs_rate, k.rating, k.selling_price, k.pic_user_id, u.name
       ORDER BY k.created_at DESC
     `, [type]);
-    
+
     const kols = result.rows.map(row => ({
       ...row,
       niches: row.niches.filter(niche => niche !== null)
@@ -490,7 +501,7 @@ app.get('/api/kols/stats', async (req, res) => {
       FROM kols
       WHERE is_active = true
     `);
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error fetching KOL stats:', error);
@@ -503,9 +514,9 @@ app.post('/api/kols', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+
     const kolData = req.body;
-    
+
     // Insert KOL
     const kolResult = await client.query(`
       INSERT INTO kols (
@@ -521,18 +532,25 @@ app.post('/api/kols', async (req, res) => {
       kolData.youtube || null, kolData.lemon8 || null, kolData.xhs || null,
       kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
       kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
-      kolData.instagramRate || 0, kolData.tiktokRate || 0, kolData.facebookRate || 0,
-      kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0, kolData.youtubeRate || 0, kolData.lemon8Rate || 0, kolData.xhsRate || 0,
+      kolData.instagramRate || kolData.instagramrate || 0,
+      kolData.tiktokRate || kolData.tiktokrate || 0,
+      kolData.facebookRate || kolData.facebookrate || 0,
+      kolData.twitterRate || kolData.twitterrate || 0,
+      kolData.threadRate || kolData.threadrate || 0,
+      kolData.blogRate || kolData.blograte || 0,
+      kolData.youtubeRate || kolData.youtuberate || 0,
+      kolData.lemon8Rate || kolData.lemon8rate || 0,
+      kolData.xhsRate || kolData.xhsrate || 0,
       kolData.rating || 0, kolData.sellingPrice || 0,
       kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
       kolData.address, kolData.contactNumber, kolData.rateDetails,
-      kolData.rateUpdatedAt || new Date().toISOString(),
+      kolData.rateUpdatedAt ? new Date(kolData.rateUpdatedAt).toISOString().split('T')[0] : null,
       kolData.picUserId || null, kolData.pic, kolData.kolType, kolData.notes,
       JSON.stringify(kolData.customFields || {})
     ]);
-    
+
     const newKOL = kolResult.rows[0];
-    
+
     // Insert niches
     if (kolData.niches && kolData.niches.length > 0) {
       for (const nicheName of kolData.niches) {
@@ -541,7 +559,7 @@ app.post('/api/kols', async (req, res) => {
           'SELECT id FROM niches WHERE name = $1',
           [nicheName]
         );
-        
+
         let nicheId;
         if (nicheResult.rows.length === 0) {
           const newNicheResult = await client.query(
@@ -552,7 +570,7 @@ app.post('/api/kols', async (req, res) => {
         } else {
           nicheId = nicheResult.rows[0].id;
         }
-        
+
         // Link KOL to niche
         await client.query(
           'INSERT INTO kol_niches (kol_id, niche_id) VALUES ($1, $2)',
@@ -560,9 +578,9 @@ app.post('/api/kols', async (req, res) => {
         );
       }
     }
-    
+
     await client.query('COMMIT');
-    
+
     // Return the complete KOL with niches
     const completeKOL = await pool.query(`
       SELECT 
@@ -583,7 +601,7 @@ app.post('/api/kols', async (req, res) => {
       WHERE k.id = $1
       GROUP BY k.id, u.name
     `, [newKOL.id]);
-    
+
     res.status(201).json(completeKOL.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -593,7 +611,7 @@ app.post('/api/kols', async (req, res) => {
     client.release();
   }
 });
-       
+
 // Get KOL by ID
 app.get('/api/kols/:id', async (req, res) => {
   try {
@@ -617,14 +635,14 @@ app.get('/api/kols/:id', async (req, res) => {
       WHERE k.id = $1 AND k.is_active = true
       GROUP BY k.id, u.name
     `, [id]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'KOL not found' });
     }
-    
+
     const kol = result.rows[0];
     kol.niches = kol.niches.filter(niche => niche !== null);
-    
+
     res.json(kol);
   } catch (error) {
     console.error('Error fetching KOL by ID:', error);
@@ -637,10 +655,45 @@ app.put('/api/kols/:id', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+
     const { id } = req.params;
     const kolData = req.body;
-    
+
+    console.log('🔵 SERVER RECEIVED UPDATE for ID:', id);
+    console.log('📦 Rate data received:', {
+      rate: kolData.rate,
+      instagramrate: kolData.instagramrate,
+      instagramRate: kolData.instagramRate,
+      tiktokrate: kolData.tiktokrate,
+      tiktokRate: kolData.tiktokRate,
+      sellingPrice: kolData.sellingPrice,
+      rateUpdatedAt: kolData.rateUpdatedAt
+    });
+
+    const queryParams = [
+      kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
+      kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
+      kolData.instagramRate || kolData.instagramrate || 0,
+      kolData.tiktokRate || kolData.tiktokrate || 0,
+      kolData.facebookRate || kolData.facebookrate || 0,
+      kolData.twitterRate || kolData.twitterrate || 0,
+      kolData.threadRate || kolData.threadrate || 0,
+      kolData.blogRate || kolData.blograte || 0,
+      kolData.youtube || null, kolData.lemon8 || null, kolData.xhs || null,
+      kolData.youtubeRate || kolData.youtuberate || 0,
+      kolData.lemon8Rate || kolData.lemon8rate || 0,
+      kolData.xhsRate || kolData.xhsrate || 0,
+      kolData.rating || 0, kolData.sellingPrice || 0,
+      kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
+      kolData.address, kolData.contactNumber, kolData.rateDetails,
+      kolData.rateUpdatedAt ? new Date(kolData.rateUpdatedAt).toISOString().split('T')[0] : null,
+      kolData.picUserId || null, kolData.pic, kolData.kolType, kolData.notes,
+      JSON.stringify(kolData.customFields || {}), id
+    ];
+
+    console.log('🔧 SQL PARAMS (positions 1-10):', queryParams.slice(0, 10));
+    console.log('🔧 SQL PARAMS $8 (rate):', queryParams[7]);
+
     // Update KOL
     const updateResult = await client.query(`
       UPDATE kols SET
@@ -657,29 +710,25 @@ app.put('/api/kols/:id', async (req, res) => {
         custom_fields = $35, updated_at = CURRENT_TIMESTAMP
       WHERE id = $36
       RETURNING *
-    `, [
-      kolData.name, kolData.instagram, kolData.tiktok, kolData.facebook,
-      kolData.twitter, kolData.thread, kolData.blog, kolData.rate,
-      kolData.instagramRate || 0, kolData.tiktokRate || 0, kolData.facebookRate || 0,
-      kolData.twitterRate || 0, kolData.threadRate || 0, kolData.blogRate || 0,
-      kolData.youtube || null, kolData.lemon8 || null, kolData.xhs || null,
-      kolData.youtubeRate || 0, kolData.lemon8Rate || 0, kolData.xhsRate || 0,
-      kolData.rating || 0, kolData.sellingPrice || 0,
-      kolData.tier, kolData.gender, kolData.hairStyle, kolData.race,
-      kolData.address, kolData.contactNumber, kolData.rateDetails,
-      kolData.rateUpdatedAt || new Date().toISOString(),
-  kolData.picUserId || null, kolData.pic, kolData.kolType, kolData.notes,
-  JSON.stringify(kolData.customFields || {}), id
-    ]);
-    
+    `, queryParams);
+
+    console.log('✅ SERVER SAVED TO DB:', {
+      id: id,
+      rate: updateResult.rows[0].rate,
+      instagram_rate: updateResult.rows[0].instagram_rate,
+      tiktok_rate: updateResult.rows[0].tiktok_rate,
+      selling_price: updateResult.rows[0].selling_price,
+      rate_updated_at: updateResult.rows[0].rate_updated_at
+    });
+
     if (updateResult.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'KOL not found' });
     }
-    
+
     // Remove existing niche links
     await client.query('DELETE FROM kol_niches WHERE kol_id = $1', [id]);
-    
+
     // Insert new niches
     if (kolData.niches && kolData.niches.length > 0) {
       for (const nicheName of kolData.niches) {
@@ -688,7 +737,7 @@ app.put('/api/kols/:id', async (req, res) => {
           'SELECT id FROM niches WHERE name = $1',
           [nicheName]
         );
-        
+
         let nicheId;
         if (nicheResult.rows.length === 0) {
           const newNicheResult = await client.query(
@@ -699,7 +748,7 @@ app.put('/api/kols/:id', async (req, res) => {
         } else {
           nicheId = nicheResult.rows[0].id;
         }
-        
+
         // Link KOL to niche
         await client.query(
           'INSERT INTO kol_niches (kol_id, niche_id) VALUES ($1, $2)',
@@ -707,9 +756,9 @@ app.put('/api/kols/:id', async (req, res) => {
         );
       }
     }
-    
+
     await client.query('COMMIT');
-    
+
     // Return the updated KOL with niches
     const completeKOL = await pool.query(`
       SELECT 
@@ -730,7 +779,7 @@ app.put('/api/kols/:id', async (req, res) => {
       WHERE k.id = $1
       GROUP BY k.id, u.name
     `, [id]);
-    
+
     res.json(completeKOL.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -749,17 +798,58 @@ app.delete('/api/kols/:id', async (req, res) => {
       'UPDATE kols SET is_active = false WHERE id = $1 RETURNING *',
       [id]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'KOL not found' });
     }
-    
+
     res.json({ message: 'KOL deleted successfully' });
   } catch (error) {
     console.error('Error deleting KOL:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Generate Proposal
+app.post('/api/proposals/generate', async (req, res) => {
+  try {
+    const { companyName, kolIds } = req.body;
+
+    if (!companyName || !kolIds || !Array.isArray(kolIds) || kolIds.length === 0) {
+      return res.status(400).json({ error: 'Invalid request. Company name and KOL IDs are required.' });
+    }
+
+    // Fetch KOL details
+    const result = await pool.query(`
+      SELECT 
+        k.*,
+        ARRAY_AGG(n.name) AS niches
+      FROM kols k
+      LEFT JOIN kol_niches kn ON k.id = kn.kol_id
+      LEFT JOIN niches n ON kn.niche_id = n.id
+      WHERE k.id = ANY($1)
+      GROUP BY k.id
+    `, [kolIds]);
+
+    const kols = result.rows.map(row => ({
+      ...row,
+      niches: row.niches.filter(niche => niche !== null)
+    }));
+
+    // Generate PDF
+    const pdfBuffer = await proposalService.generateProposal(companyName, kols);
+
+    // Send PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="proposal-${companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf"`);
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error generating proposal:', error);
+    res.status(500).json({ error: 'Failed to generate proposal' });
+  }
+});
+
 
 // Get all niches
 app.get('/api/niches', async (req, res) => {
@@ -781,7 +871,7 @@ app.get('/api/custom-fields', async (req, res) => {
       SELECT * FROM custom_field_configs
       WHERE is_active = true
       ORDER BY display_order, field_label
-    `);
+      `);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching custom fields:', error);
@@ -799,10 +889,10 @@ app.post('/api/custom-fields', async (req, res) => {
     }
 
     const result = await pool.query(`
-      INSERT INTO custom_field_configs (field_key, field_label, field_type, field_options, is_required, display_order)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO custom_field_configs(field_key, field_label, field_type, field_options, is_required, display_order)
+      VALUES($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [fieldKey, fieldLabel, fieldType, JSON.stringify(fieldOptions || []), isRequired || false, displayOrder || 0]);
+      `, [fieldKey, fieldLabel, fieldType, JSON.stringify(fieldOptions || []), isRequired || false, displayOrder || 0]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -824,15 +914,15 @@ app.put('/api/custom-fields/:id', async (req, res) => {
     const result = await pool.query(`
       UPDATE custom_field_configs SET
         field_label = $1,
-        field_type = $2,
-        field_options = $3,
-        is_required = $4,
-        display_order = $5,
-        is_active = $6,
-        updated_at = CURRENT_TIMESTAMP
+      field_type = $2,
+      field_options = $3,
+      is_required = $4,
+      display_order = $5,
+      is_active = $6,
+      updated_at = CURRENT_TIMESTAMP
       WHERE id = $7
       RETURNING *
-    `, [fieldLabel, fieldType, JSON.stringify(fieldOptions || []), isRequired, displayOrder, isActive, id]);
+      `, [fieldLabel, fieldType, JSON.stringify(fieldOptions || []), isRequired, displayOrder, isActive, id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Custom field not found' });
@@ -869,23 +959,23 @@ app.delete('/api/custom-fields/:id', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-    
+
     // Query the database for the user
     const result = await pool.query(
       'SELECT id, email, name, role FROM users WHERE email = $1 AND password_hash = $2',
       [email, password]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-    
+
     const user = result.rows[0];
-    
+
     // In production, you should generate a JWT token here
     res.json({
       success: true,
@@ -995,14 +1085,14 @@ app.get('/api/users', async (req, res) => {
       'active' as status
       FROM users 
       ORDER BY created_at DESC
-    `);
-    
+      `);
+
     const users = result.rows.map(user => ({
       ...user,
       department: 'Management', // Default department
       avatar: user.name.split(' ').map(n => n[0]).join('').toUpperCase()
     }));
-    
+
     res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -1014,32 +1104,32 @@ app.get('/api/users', async (req, res) => {
 app.post('/api/users', async (req, res) => {
   try {
     const { name, email, role = 'viewer', department, password } = req.body;
-    
+
     if (!name || !email) {
       return res.status(400).json({ error: 'Name and email are required' });
     }
-    
+
     // Check if user already exists
     const existingUser = await pool.query(
       'SELECT id FROM users WHERE email = $1',
       [email]
     );
-    
+
     if (existingUser.rows.length > 0) {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
-    
+
     // Use provided password or generate a temporary one
     const userPassword = password || Math.random().toString(36).slice(-8);
-    
+
     // Create new user
     const result = await pool.query(
       'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, created_at',
       [email, userPassword, name, role]
     );
-    
+
     const user = result.rows[0];
-    
+
     res.status(201).json({
       ...user,
       department: department || 'Management',
@@ -1059,18 +1149,18 @@ app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, role, department } = req.body;
-    
+
     const result = await pool.query(
       'UPDATE users SET name = $1, email = $2, role = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, email, name, role, updated_at',
       [name, email, role, id]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     const user = result.rows[0];
-    
+
     res.json({
       ...user,
       department: department || 'Management',
@@ -1088,16 +1178,16 @@ app.put('/api/users/:id', async (req, res) => {
 app.delete('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       'DELETE FROM users WHERE id = $1 RETURNING id, name',
       [id]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     res.json({ message: 'User deleted successfully', user: result.rows[0] });
   } catch (error) {
     console.error('Error deleting user:', error);
@@ -1119,8 +1209,8 @@ app.get('/api/debug/kol-structure', async (req, res) => {
       WHERE table_name = 'kols' 
       AND column_name LIKE '%rate%'
       ORDER BY column_name
-    `);
-    
+      `);
+
     res.json({
       rate_columns: result.rows,
       message: 'Database structure for rate columns'
@@ -1136,13 +1226,13 @@ app.get('/api/debug/sample-kol', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        id, name, rate, instagram_rate, tiktok_rate, facebook_rate, 
-        twitter_rate, thread_rate, blog_rate, kol_type
+        id, name, rate, instagram_rate, tiktok_rate, facebook_rate,
+      twitter_rate, thread_rate, blog_rate, kol_type
       FROM kols 
       WHERE is_active = true 
       LIMIT 1
-    `);
-    
+      `);
+
     res.json({
       sample_kol: result.rows[0] || 'No KOLs found',
       message: 'Sample KOL with rate columns'
@@ -1159,7 +1249,7 @@ async function setupInitialUser() {
     // Check if any users exist
     const result = await pool.query('SELECT COUNT(*) FROM users');
     const userCount = parseInt(result.rows[0].count);
-    
+
     if (userCount === 0) {
       // Create the first user
       await pool.query(
@@ -1181,7 +1271,7 @@ async function startServer() {
     await initializeDatabase();
     await setupInitialUser();
     await migrateSampleData();
-    
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/api/health`);

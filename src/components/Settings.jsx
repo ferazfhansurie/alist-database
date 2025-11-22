@@ -121,7 +121,7 @@ const Settings = () => {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch('https://alist.jutateknologi.com/api/users');
+      const response = await fetch('http://localhost:3001/api/users');
       
       if (!response.ok) {
         throw new Error('Failed to fetch users');
@@ -240,6 +240,22 @@ const Settings = () => {
     return hairStyle.trim();
   };
 
+  // Helper function to format gender
+  const formatGender = (gender) => {
+    if (!gender || gender.trim() === '') return 'Other';
+    
+    const cleaned = gender.trim().toLowerCase();
+    if (cleaned === 'male' || cleaned === 'm') return 'Male';
+    if (cleaned === 'female' || cleaned === 'f') return 'Female';
+    if (cleaned === 'other') return 'Other';
+    
+    // Handle exact matches
+    const titleCased = gender.trim().charAt(0).toUpperCase() + gender.trim().slice(1).toLowerCase();
+    if (titleCased === 'Male' || titleCased === 'Female' || titleCased === 'Other') return titleCased;
+    
+    return 'Other';
+  };
+
   // Download CSV template
   const handleDownloadTemplate = () => {
     const templateData = [
@@ -280,7 +296,7 @@ const Settings = () => {
     }
 
     try {
-      const response = await fetch('https://alist.jutateknologi.com/api/users', {
+      const response = await fetch('http://localhost:3001/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -321,7 +337,7 @@ const Settings = () => {
     if (!userToDelete) return;
 
     try {
-      const response = await fetch(`https://alist.jutateknologi.com/api/users/${userToDelete.id}`, {
+      const response = await fetch(`http://localhost:3001/api/users/${userToDelete.id}`, {
         method: 'DELETE',
       });
 
@@ -478,7 +494,7 @@ const Settings = () => {
               threadRate: threadRate,
               blogRate: blogRate,
               tier: kolData.tier || kolData.Tier || 'Tier 3 (Emerging)',
-              gender: kolData.gender || kolData.Gender || 'Other',
+              gender: formatGender(kolData.gender || kolData.Gender || 'Other'),
               hairStyle: formatHairStyle(kolData.hairStyle || kolData.hair_style || kolData['Hijab/Free Hair'] || 'Free Hair'),
               race: kolData.race || kolData.Race || 'Other',
               address: kolData.address || kolData.Address || 'Selangor',
@@ -491,7 +507,7 @@ const Settings = () => {
             };
 
             // Send to API
-            const response = await fetch('https://alist.jutateknologi.com/api/kols', {
+            const response = await fetch('http://localhost:3001/api/kols', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

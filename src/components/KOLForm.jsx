@@ -24,7 +24,7 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { Plus, X, Save, User, Link, DollarSign, Users, MapPin, Phone, Calendar, FileText, UserCheck } from 'lucide-react';
+import { Plus, X, Save, User, Link, DollarSign, Users, MapPin, Phone, Calendar, FileText, UserCheck, Star } from 'lucide-react';
 import {
   TIERS,
   GENDERS,
@@ -55,10 +55,19 @@ const KOLForm = ({
     twitter: '',
     thread: '',
     blog: '',
-  youtube: '',
-  lemon8: '',
-  xhs: '',
+    youtube: '',
+    lemon8: '',
+    xhs: '',
     rate: 0,
+    instagramrate: 0,
+    tiktokrate: 0,
+    facebookrate: 0,
+    twitterrate: 0,
+    threadrate: 0,
+    blograte: 0,
+    youtuberate: 0,
+    xhsrate: 0,
+    lemon8rate: 0,
     tier: TIERS[0],
     gender: GENDERS[0],
     niches: [],
@@ -89,9 +98,42 @@ const KOLForm = ({
   useEffect(() => {
     if (initialData) {
       setFormData({
-        ...initialData,
+        name: initialData.name || '',
+        instagram: initialData.instagram || '',
+        tiktok: initialData.tiktok || '',
+        facebook: initialData.facebook || '',
+        twitter: initialData.twitter || '',
+        thread: initialData.thread || '',
+        blog: initialData.blog || '',
+        youtube: initialData.youtube || '',
+        lemon8: initialData.lemon8 || '',
+        xhs: initialData.xhs || '',
+        rate: initialData.rate || 0,
+        instagramrate: initialData.instagramrate || initialData.instagramRate || 0,
+        tiktokrate: initialData.tiktokrate || initialData.tiktokRate || 0,
+        facebookrate: initialData.facebookrate || initialData.facebookRate || 0,
+        twitterrate: initialData.twitterrate || initialData.twitterRate || 0,
+        threadrate: initialData.threadrate || initialData.threadRate || 0,
+        blograte: initialData.blograte || initialData.blogRate || 0,
+        youtuberate: initialData.youtuberate || initialData.youtubeRate || 0,
+        xhsrate: initialData.xhsrate || initialData.xhsRate || 0,
+        lemon8rate: initialData.lemon8rate || initialData.lemon8Rate || 0,
+        tier: initialData.tier || TIERS[0],
+        gender: initialData.gender || GENDERS[0],
+        niches: initialData.niches || [],
+        hairStyle: initialData.hairStyle || initialData.hair_style || HAIR_STYLES[0],
+        race: initialData.race || RACES[0],
+        address: initialData.address || STATES[0],
+        contactNumber: initialData.contactNumber || initialData.contact_number || '',
+        rateDetails: initialData.rateDetails || initialData.rate_details || '',
+        rateUpdatedAt: initialData.rateUpdatedAt || initialData.rate_updated_at || new Date().toISOString().split('T')[0],
+        rating: initialData.rating || 0,
+        sellingPrice: initialData.sellingPrice || initialData.sellingprice || initialData.selling_price || 0,
+        pic: initialData.pic || PICS[0],
         picUserId: initialData.picUserId || initialData.pic_user_id || null,
         picUserEmail: initialData.picUserEmail || initialData.pic_user_email || null,
+        kolType: initialData.kolType || initialData.kol_type || kolType,
+        notes: initialData.notes || '',
         customFields: initialData.custom_fields || initialData.customFields || {}
       });
     }
@@ -815,32 +857,61 @@ const KOLForm = ({
                   <Box p={2} borderRadius="lg" bg="rgba(220, 38, 38, 0.1)" mr={3}>
                     <DollarSign size={18} color="#dc2626" />
                   </Box>
-                  Rate & Tier
+                  Rates & Tier
                 </Heading>
-                <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4}>
-                  <FormControl isInvalid={!!errors.rate}>
-                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Rate (RM) *</FormLabel>
+                
+                {/* General Rate & Tier */}
+                {/* Rate & Tier Section */}
+                <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4} mb={4}>
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
+                      <HStack spacing={2}>
+                        <Text>Overall Rate (RM)</Text>
+                        <Tooltip label="Auto-calculated as the highest platform rate" fontSize="xs">
+                          <Badge colorScheme="blue" fontSize="xs">Auto</Badge>
+                        </Tooltip>
+                      </HStack>
+                    </FormLabel>
                     <Input
-                      bg="rgba(255, 255, 255, 0.8)"
+                      bg="rgba(255, 255, 255, 0.5)"
                       backdropFilter="blur(15px)"
                       border="1px solid"
                       borderColor="rgba(220, 38, 38, 0.2)"
                       borderRadius="lg"
                       type="number"
-                      placeholder="1500"
+                      placeholder="Auto-calculated"
                       value={formData.rate}
-                      onChange={(e) => handleInputChange('rate', parseFloat(e.target.value) || 0)}
+                      isReadOnly
+                      cursor="not-allowed"
+                      opacity={0.7}
+                      _hover={{
+                        borderColor: 'gray.300'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Selling Price (RM)</FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      backdropFilter="blur(15px)"
+                      border="1px solid"
+                      borderColor="rgba(147, 51, 234, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="2000"
+                      value={formData.sellingPrice}
+                      onChange={(e) => handleInputChange('sellingPrice', parseFloat(e.target.value) || 0)}
                       _focus={{
-                        borderColor: 'red.400',
-                        boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
+                        borderColor: 'purple.400',
+                        boxShadow: '0 0 0 2px rgba(147, 51, 234, 0.1)',
                         bg: 'rgba(255, 255, 255, 0.95)'
                       }}
                       _hover={{
-                        borderColor: 'red.300'
+                        borderColor: 'purple.300'
                       }}
                       transition="all 0.2s ease"
                     />
-                    {errors.rate && <FormErrorMessage>{errors.rate}</FormErrorMessage>}
                   </FormControl>
 
                   <FormControl>
@@ -869,6 +940,197 @@ const KOLForm = ({
                     </Select>
                   </FormControl>
                 </Grid>
+
+                {/* Platform-Specific Rates */}
+                <Divider my={4} />
+                <Text fontSize="sm" fontWeight="600" color="gray.600" mb={3}>
+                  Platform-Specific Rates
+                  <Text as="span" fontSize="xs" color="gray.500" ml={2}>
+                    (Overall rate will be the highest value)
+                  </Text>
+                </Text>
+                <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="pink.700">
+                      Instagram Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(236, 72, 153, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.instagramrate}
+                      onChange={(e) => handleInputChange('instagramrate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'pink.400',
+                        boxShadow: '0 0 0 2px rgba(236, 72, 153, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="gray.700">
+                      TikTok Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(0, 0, 0, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.tiktokrate}
+                      onChange={(e) => handleInputChange('tiktokrate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'gray.400',
+                        boxShadow: '0 0 0 2px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="blue.700">
+                      Facebook Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(59, 130, 246, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.facebookrate}
+                      onChange={(e) => handleInputChange('facebookrate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'blue.400',
+                        boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="blue.600">
+                      Twitter/X Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(29, 161, 242, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.twitterrate}
+                      onChange={(e) => handleInputChange('twitterrate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'blue.400',
+                        boxShadow: '0 0 0 2px rgba(29, 161, 242, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="purple.700">
+                      Threads Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(147, 51, 234, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.threadrate}
+                      onChange={(e) => handleInputChange('threadrate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'purple.400',
+                        boxShadow: '0 0 0 2px rgba(147, 51, 234, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="orange.700">
+                      Blog Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(249, 115, 22, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.blograte}
+                      onChange={(e) => handleInputChange('blograte', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'orange.400',
+                        boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="red.700">
+                      YouTube Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(220, 38, 38, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.youtuberate}
+                      onChange={(e) => handleInputChange('youtuberate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'red.400',
+                        boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="red.600">
+                      XHS Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(220, 38, 38, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.xhsrate}
+                      onChange={(e) => handleInputChange('xhsrate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'red.400',
+                        boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel fontSize="sm" fontWeight="500" color="yellow.700">
+                      Lemon8 Rate (RM)
+                    </FormLabel>
+                    <Input
+                      bg="rgba(255, 255, 255, 0.8)"
+                      border="1px solid"
+                      borderColor="rgba(234, 179, 8, 0.2)"
+                      borderRadius="lg"
+                      type="number"
+                      placeholder="0"
+                      value={formData.lemon8rate}
+                      onChange={(e) => handleInputChange('lemon8rate', parseFloat(e.target.value) || 0)}
+                      _focus={{
+                        borderColor: 'yellow.400',
+                        boxShadow: '0 0 0 2px rgba(234, 179, 8, 0.1)'
+                      }}
+                    />
+                  </FormControl>
+                </Grid>
+                
                 <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4} mt={4}>
                   <FormControl>
                     <FormLabel fontSize="sm" fontWeight="600" color="gray.700">
@@ -899,18 +1161,19 @@ const KOLForm = ({
                       transition="all 0.2s ease"
                     />
                   </FormControl>
+
                   <FormControl>
-                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Selling Price (internal RM)</FormLabel>
-                    <Input
+                    <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Rate Details / Notes</FormLabel>
+                    <Textarea
                       bg="rgba(255, 255, 255, 0.8)"
                       backdropFilter="blur(15px)"
                       border="1px solid"
                       borderColor="rgba(220, 38, 38, 0.2)"
                       borderRadius="lg"
-                      type="number"
-                      placeholder="Internal selling price"
-                      value={formData.sellingPrice}
-                      onChange={(e) => handleInputChange('sellingPrice', parseFloat(e.target.value) || 0)}
+                      placeholder="e.g., Negotiable, Bulk discount available..."
+                      value={formData.rateDetails}
+                      onChange={(e) => handleInputChange('rateDetails', e.target.value)}
+                      rows={2}
                       _focus={{
                         borderColor: 'red.400',
                         boxShadow: '0 0 0 2px rgba(220, 38, 38, 0.1)',
@@ -922,6 +1185,25 @@ const KOLForm = ({
                       transition="all 0.2s ease"
                     />
                   </FormControl>
+                </Grid>
+              </Box>
+
+              {/* Performance & Rating */}
+              <Box 
+                bg="rgba(255, 255, 255, 0.1)"
+                backdropFilter="blur(10px)"
+                p={4}
+                borderRadius="xl"
+                border="1px solid"
+                borderColor="rgba(255, 255, 255, 0.1)"
+              >
+                <Heading size="md" color="gray.700" mb={4} display="flex" alignItems="center">
+                  <Box p={2} borderRadius="lg" bg="rgba(220, 38, 38, 0.1)" mr={3}>
+                    <Star size={18} color="#dc2626" />
+                  </Box>
+                  Performance & Rating
+                </Heading>
+                <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4}>
                   <FormControl>
                     <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Rating (stars)</FormLabel>
                     <Select
@@ -953,7 +1235,7 @@ const KOLForm = ({
                 </Grid>
 
                 <FormControl mt={4}>
-                  <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Rate Details</FormLabel>
+                  <FormLabel fontSize="sm" fontWeight="600" color="gray.700">Performance Notes</FormLabel>
                   <Textarea
                     bg="rgba(255, 255, 255, 0.8)"
                     backdropFilter="blur(15px)"

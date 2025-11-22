@@ -5,7 +5,7 @@
 const isDevelopment = import.meta.env.MODE === 'development';
 const API_BASE_URL = isDevelopment
   ? '' // Use Vite proxy in development (relative URLs)
-  : (import.meta.env.VITE_API_URL || 'https://alist.jutateknologi.com');
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3001');
 
 export const API_URL = API_BASE_URL;
 

@@ -31,14 +31,21 @@ import {
   useColorModeValue,
   SimpleGrid,
   Spinner,
-  Center
+  Center,
+  Checkbox,
+  Tooltip,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Link
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  Search,
+  Edit,
+  Trash2,
+  Eye,
   Instagram,
   Facebook,
   Twitter,
@@ -47,14 +54,20 @@ import {
   MapPin,
   Target,
   FileText,
-  Phone
+  Phone,
+  DollarSign,
+  MoreVertical,
+  ExternalLink,
+  ChevronDown,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { KOL_TYPES, TIERS, NICHES, STATES } from '../data/models';
+
 import KOLForm from './KOLForm';
+import ProposalModal from './ProposalModal';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
-
-const MotionBox = motion(Box);
 
 // Memoized table row component to prevent unnecessary re-renders
 const KOLTableRow = memo(({
@@ -66,512 +79,406 @@ const KOLTableRow = memo(({
   getTierColor,
   formatDate,
   canEdit,
-  canDelete
+  canDelete,
+  isSelected,
+  onSelect
 }) => {
-  // Memoize expensive calculations
-  const instagramRate = useMemo(() => parseFloat(kol.instagramRate) || 0, [kol.instagramRate]);
-  const tiktokRate = useMemo(() => parseFloat(kol.tiktokRate) || 0, [kol.tiktokRate]);
-  const facebookRate = useMemo(() => parseFloat(kol.facebookRate) || 0, [kol.facebookRate]);
-  const twitterRate = useMemo(() => parseFloat(kol.twitterRate) || 0, [kol.twitterRate]);
-  const threadRate = useMemo(() => parseFloat(kol.threadRate) || 0, [kol.threadRate]);
-  const blogRate = useMemo(() => parseFloat(kol.blogRate) || 0, [kol.blogRate]);
-  
-  const hasAnyRates = useMemo(() => 
-    instagramRate > 0 || tiktokRate > 0 || facebookRate > 0 || 
-    twitterRate > 0 || threadRate > 0 || blogRate > 0, 
-    [instagramRate, tiktokRate, facebookRate, twitterRate, threadRate, blogRate]
-  );
-
   return (
-  <Tr 
-    _hover={{ bg: 'rgba(254, 226, 226, 0.4)', transform: 'scale(1.01)' }}
-    fontSize="sm"
-    borderBottom="1px solid"
-    borderColor="rgba(220, 38, 38, 0.15)"
-    minHeight="120px"
-    transition="all 0.2s ease"
-  >
-    {/* KOL Details */}
-    <Td px={6} py={5} minW="150px">
-      <VStack align="start" spacing={2}>
-        <Text fontWeight="700" color="gray.800" fontSize="md" wordBreak="break-word">
-          {kol.name || 'No Name'}
-        </Text>
-        {kol.notes && (
-          <Text fontSize="xs" color="gray.500" fontStyle="italic" wordBreak="break-word">
-            {kol.notes}
+    <Tr
+      _hover={{ bg: 'gray.50' }}
+      bg={isSelected ? 'blue.50' : 'white'}
+      borderBottom="1px solid"
+      borderColor="gray.200"
+      transition="all 0.15s ease"
+    >
+      {/* Checkbox */}
+      <Td px={3} py={3} w="40px">
+        <Checkbox
+          isChecked={isSelected}
+          onChange={(e) => onSelect(kol.id, e.target.checked)}
+          colorScheme="blue"
+          size="lg"
+        />
+      </Td>
+
+      {/* Name */}
+      <Td px={3} py={3} minW="150px" maxW="200px">
+        <VStack align="start" spacing={1}>
+          <Text fontWeight="600" color="gray.900" fontSize="sm" noOfLines={1}>
+            {kol.name || 'No Name'}
           </Text>
-        )}
-      </VStack>
-    </Td>
-
-    {/* Platform Links */}
-    <Td px={6} py={5}>
-      <HStack spacing={2} flexWrap="wrap" justify="center">
-        {kol.instagram && (
-          <HStack 
-            bg="rgba(255, 255, 255, 0.8)"
-            backdropFilter="blur(10px)"
-            p={2}
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.3)"
-            cursor="pointer"
-            onClick={() => onOpenLink(kol.instagram)}
-            _hover={{
-              bg: 'rgba(254, 226, 226, 0.9)',
-              transform: 'translateY(-1px)'
-            }}
-            transition="all 0.2s ease"
-            boxShadow="0 2px 8px rgba(0,0,0,0.1)"
-          >
-            <Instagram size={14} color="#E4405F" />
-            <Text fontSize="xs" color="blue.600" fontWeight="600">IG</Text>
-          </HStack>
-        )}
-        {kol.tiktok && (
-          <HStack 
-            bg="rgba(255, 255, 255, 0.8)"
-            backdropFilter="blur(10px)"
-            p={2}
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.3)"
-            cursor="pointer"
-            onClick={() => onOpenLink(kol.tiktok)}
-            _hover={{
-              bg: 'rgba(254, 226, 226, 0.9)',
-              transform: 'translateY(-1px)'
-            }}
-            transition="all 0.2s ease"
-            boxShadow="0 2px 8px rgba(0,0,0,0.1)"
-          >
-            <Text fontSize="xs" color="black" fontWeight="600">🎵</Text>
-            <Text fontSize="xs" color="blue.600" fontWeight="600">TT</Text>
-          </HStack>
-        )}
-        {kol.facebook && (
-          <HStack 
-            bg="rgba(255, 255, 255, 0.8)"
-            backdropFilter="blur(10px)"
-            p={2}
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.3)"
-            cursor="pointer"
-            onClick={() => onOpenLink(kol.facebook)}
-            _hover={{
-              bg: 'rgba(254, 226, 226, 0.9)',
-              transform: 'translateY(-1px)'
-            }}
-            transition="all 0.2s ease"
-            boxShadow="0 2px 8px rgba(0,0,0,0.1)"
-          >
-            <Facebook size={14} color="#1877F2" />
-            <Text fontSize="xs" color="blue.600" fontWeight="600">FB</Text>
-          </HStack>
-        )}
-      </HStack>
-    </Td>
-
-    {/* Rate */}
-    <Td px={6} py={5} minW="280px">
-      <VStack align="start" spacing={3}>
-        <VStack spacing={2} align="start" w="full">
-          {instagramRate > 0 && (
-            <Box 
-              bg="rgba(236, 72, 153, 0.1)" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor="pink.200"
-              w="full"
-              _hover={{ bg: 'rgba(236, 72, 153, 0.15)', transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg="pink.100" borderRadius="md">
-                    <Instagram size={16} color="#E4405F" />
-                  </Box>
-                  <Text fontSize="sm" color="pink.700" fontWeight="700">Instagram</Text>
-                </HStack>
-                <Text fontSize="lg" color="pink.800" fontWeight="800" fontFamily="mono">
-                  RM{instagramRate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          )}
-          {tiktokRate > 0 && (
-            <Box 
-              bg="rgba(0, 0, 0, 0.05)" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor="gray.300"
-              w="full"
-              _hover={{ bg: 'rgba(0, 0, 0, 0.08)', transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg="gray.100" borderRadius="md">
-                    <Text fontSize="sm">🎵</Text>
-                  </Box>
-                  <Text fontSize="sm" color="gray.700" fontWeight="700">TikTok</Text>
-                </HStack>
-                <Text fontSize="lg" color="gray.800" fontWeight="800" fontFamily="mono">
-                  RM{tiktokRate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          )}
-          {facebookRate > 0 && (
-            <Box 
-              bg="rgba(59, 130, 246, 0.1)" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor="blue.200"
-              w="full"
-              _hover={{ bg: 'rgba(59, 130, 246, 0.15)', transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg="blue.100" borderRadius="md">
-                    <Facebook size={16} color="#1877F2" />
-                  </Box>
-                  <Text fontSize="sm" color="blue.700" fontWeight="700">Facebook</Text>
-                </HStack>
-                <Text fontSize="lg" color="blue.800" fontWeight="800" fontFamily="mono">
-                  RM{facebookRate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          )}
-          {twitterRate > 0 && (
-            <Box 
-              bg="rgba(29, 161, 242, 0.1)" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor="blue.200"
-              w="full"
-              _hover={{ bg: 'rgba(29, 161, 242, 0.15)', transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg="blue.100" borderRadius="md">
-                    <Twitter size={16} color="#1DA1F2" />
-                  </Box>
-                  <Text fontSize="sm" color="blue.700" fontWeight="700">Twitter</Text>
-                </HStack>
-                <Text fontSize="lg" color="blue.800" fontWeight="800" fontFamily="mono">
-                  RM{twitterRate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          )}
-          {threadRate > 0 && (
-            <Box 
-              bg="rgba(147, 51, 234, 0.1)" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor="purple.200"
-              w="full"
-              _hover={{ bg: 'rgba(147, 51, 234, 0.15)', transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg="purple.100" borderRadius="md">
-                    <Text fontSize="sm">🧵</Text>
-                  </Box>
-                  <Text fontSize="sm" color="purple.700" fontWeight="700">Threads</Text>
-                </HStack>
-                <Text fontSize="lg" color="purple.800" fontWeight="800" fontFamily="mono">
-                  RM{threadRate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          )}
-          {blogRate > 0 && (
-            <Box 
-              bg="rgba(249, 115, 22, 0.1)" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor="orange.200"
-              w="full"
-              _hover={{ bg: 'rgba(249, 115, 22, 0.15)', transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg="orange.100" borderRadius="md">
-                    <FileText size={16} color="#F97316" />
-                  </Box>
-                  <Text fontSize="sm" color="orange.700" fontWeight="700">Blog</Text>
-                </HStack>
-                <Text fontSize="lg" color="orange.800" fontWeight="800" fontFamily="mono">
-                  RM{blogRate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          )}
-          {!hasAnyRates && (
-            <Box 
-              bg="gray.50" 
-              p={4} 
-              borderRadius="lg" 
-              border="1px dashed" 
-              borderColor="gray.300"
-              w="full"
-              textAlign="center"
-            >
-              <Text fontSize="sm" color="gray.500" fontStyle="italic" fontWeight="500">
-                No platform rates set
-              </Text>
-            </Box>
+          {kol.notes && (
+            <Text fontSize="xs" color="blue.600" noOfLines={1} fontWeight="500">
+              {kol.notes}
+            </Text>
           )}
         </VStack>
-      </VStack>
-    </Td>
+      </Td>
 
-    {/* Tier */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme={getTierColor(kol.tier)} 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.tier}
-      </Badge>
-    </Td>
+      {/* Contact */}
+      <Td px={3} py={3} minW="120px">
+        <Text fontSize="xs" fontFamily="mono" color="gray.700" noOfLines={1}>
+          {kol.contact_number || kol.contactNumber || 'N/A'}
+        </Text>
+      </Td>
 
-    {/* Gender */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme="purple" 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.gender || 'N/A'}
-      </Badge>
-    </Td>
+      {/* Platforms */}
+      <Td px={3} py={3}>
+        <HStack spacing={1}>
+          {kol.instagram && (
+            <Tooltip label="Instagram" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.instagram)}
+                bg="pink.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'pink.100' }}
+              >
+                <Instagram size={14} color="#E4405F" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.tiktok && (
+            <Tooltip label="TikTok" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.tiktok)}
+                bg="gray.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'gray.100' }}
+              >
+                <Text fontSize="xs">🎵</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.facebook && (
+            <Tooltip label="Facebook" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.facebook)}
+                bg="blue.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'blue.100' }}
+              >
+                <Facebook size={14} color="#1877F2" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.twitter && (
+            <Tooltip label="Twitter" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.twitter)}
+                bg="blue.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'blue.100' }}
+              >
+                <Twitter size={14} color="#1DA1F2" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.thread && (
+            <Tooltip label="Threads" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.thread)}
+                bg="purple.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'purple.100' }}
+              >
+                <Text fontSize="xs">🧵</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.blog && (
+            <Tooltip label="Blog" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.blog)}
+                bg="orange.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'orange.100' }}
+              >
+                <FileText size={14} color="#F97316" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.youtube && (
+            <Tooltip label="YouTube" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.youtube)}
+                bg="red.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'red.100' }}
+              >
+                <Text fontSize="xs">▶️</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.xhs && (
+            <Tooltip label="XHS" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.xhs)}
+                bg="red.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'red.100' }}
+              >
+                <Text fontSize="xs">📕</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.lemon8 && (
+            <Tooltip label="Lemon8" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.lemon8)}
+                bg="yellow.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'yellow.100' }}
+              >
+                <Text fontSize="xs">🍋</Text>
+              </Box>
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
 
-    {/* Niche */}
-    <Td px={6} py={5} minW="180px">
-      <VStack align="start" spacing={2}>
-        {kol.niches && kol.niches.length > 0 ? (
-          <>
-            {kol.niches.map(niche => (
-              <Badge 
-                key={niche} 
-                colorScheme="red" 
-                variant="outline" 
-                size="sm"
-                borderRadius="full"
-                fontWeight="700"
-                borderWidth="2px"
-                fontSize="sm"
-                px={3}
-                py={1}
-                wordBreak="break-word"
+      {/* Rate */}
+      <Td px={3} py={3} minW="100px">
+        <VStack align="start" spacing={0.5}>
+          {parseFloat(kol.rate) > 0 && (
+            <Tooltip label="General Rate" fontSize="xs">
+              <Text fontSize="sm" fontWeight="700" color="green.700">
+                RM{parseFloat(kol.rate).toLocaleString()}
+              </Text>
+            </Tooltip>
+          )}
+          {parseFloat(kol.instagramrate || kol.instagramRate) > 0 && (
+            <Text fontSize="xs" color="pink.600">
+              IG: RM{parseFloat(kol.instagramrate || kol.instagramRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.tiktokrate || kol.tiktokRate) > 0 && (
+            <Text fontSize="xs" color="gray.600">
+              TT: RM{parseFloat(kol.tiktokrate || kol.tiktokRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.facebookrate || kol.facebookRate) > 0 && (
+            <Text fontSize="xs" color="blue.600">
+              FB: RM{parseFloat(kol.facebookrate || kol.facebookRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.youtuberate || kol.youtubeRate) > 0 && (
+            <Text fontSize="xs" color="red.600">
+              YT: RM{parseFloat(kol.youtuberate || kol.youtubeRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.twitterrate || kol.twitterRate) > 0 && (
+            <Text fontSize="xs" color="blue.500">
+              X: RM{parseFloat(kol.twitterrate || kol.twitterRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.threadrate || kol.threadRate) > 0 && (
+            <Text fontSize="xs" color="purple.600">
+              TH: RM{parseFloat(kol.threadrate || kol.threadRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.blograte || kol.blogRate) > 0 && (
+            <Text fontSize="xs" color="orange.600">
+              Blog: RM{parseFloat(kol.blograte || kol.blogRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.xhsrate || kol.xhsRate) > 0 && (
+            <Text fontSize="xs" color="red.600">
+              XHS: RM{parseFloat(kol.xhsrate || kol.xhsRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.lemon8rate || kol.lemon8Rate) > 0 && (
+            <Text fontSize="xs" color="yellow.600">
+              L8: RM{parseFloat(kol.lemon8rate || kol.lemon8Rate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.sellingprice) > 0 && (
+            <Text fontSize="xs" color="purple.700" fontWeight="600">
+              Sell: RM{parseFloat(kol.sellingprice).toLocaleString()}
+            </Text>
+          )}
+          {!kol.rate && !kol.instagramrate && !kol.tiktokrate && !kol.facebookrate && !kol.youtuberate && (
+            <Text fontSize="xs" color="gray.400">N/A</Text>
+          )}
+        </VStack>
+      </Td>
+
+      {/* Rate Details */}
+      <Td px={3} py={3} minW="120px" maxW="150px">
+        <Text fontSize="xs" color="gray.600" noOfLines={2}>
+          {kol.rate_details || kol.rateDetails || '-'}
+        </Text>
+      </Td>
+
+      {/* Tier */}
+      <Td px={3} py={3}>
+        <Badge
+          colorScheme={getTierColor(kol.tier)}
+          variant="subtle"
+          fontSize="xs"
+          px={2}
+          py={1}
+          borderRadius="md"
+        >
+          {kol.tier || 'N/A'}
+        </Badge>
+      </Td>
+
+      {/* Gender */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.gender || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Race */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.race || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Hair Style */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.hair_style || kol.hairStyle || kol.hijabStatus || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Location */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700" noOfLines={1}>
+          {kol.address || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Niches */}
+      <Td px={3} py={3} minW="150px" maxW="180px">
+        <HStack spacing={1} flexWrap="wrap">
+          {kol.niches && kol.niches.length > 0 ? (
+            kol.niches.slice(0, 2).map((niche, idx) => (
+              <Badge
+                key={idx}
+                colorScheme="red"
+                variant="outline"
+                fontSize="2xs"
+                px={1.5}
+                py={0.5}
+                borderRadius="sm"
               >
                 {niche}
               </Badge>
-            ))}
-          </>
-        ) : (
-          <Text fontSize="sm" color="gray.400" fontStyle="italic">
-            No niches
-          </Text>
-        )}
-      </VStack>
-    </Td>
-
-    {/* Hijab/Free Hair */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme="teal" 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.hairStyle || kol.hijabStatus || 'N/A'}
-      </Badge>
-    </Td>
-
-    {/* Race */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme="blue" 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.race || 'N/A'}
-      </Badge>
-    </Td>
-
-    {/* Address */}
-    <Td px={6} py={5} minW="120px">
-      <Text fontSize="sm" fontWeight="600" color="gray.700" wordBreak="break-word">
-        {kol.address || 'N/A'}
-      </Text>
-    </Td>
-
-    {/* Contact */}
-    <Td px={6} py={5} minW="150px">
-      <Text 
-        fontSize="sm" 
-        fontFamily="mono" 
-        fontWeight="700"
-        color="gray.800"
-        bg="gray.50"
-        px={3}
-        py={2}
-        borderRadius="md"
-        border="1px solid"
-        borderColor="gray.200"
-        wordBreak="break-all"
-      >
-        {kol.contactNumber || 'N/A'}
-      </Text>
-    </Td>
-
-    {/* Date */}
-    <Td px={6} py={5}>
-      <VStack align="start" spacing={2}>
-        <HStack spacing={2}>
-          <Calendar size={14} color="#666" />
-          <Text fontSize="xs" fontWeight="500" color="gray.500">
-            Added:
-          </Text>
-          <Text fontSize="sm" fontWeight="600" noOfLines={1} color="gray.700">
-            {formatDate(kol.submission_date || kol.dateAdded || kol.createdAt)}
-          </Text>
+            ))
+          ) : (
+            <Text fontSize="xs" color="gray.400">-</Text>
+          )}
+          {kol.niches && kol.niches.length > 2 && (
+            <Tooltip label={kol.niches.slice(2).join(', ')} fontSize="xs">
+              <Badge colorScheme="gray" variant="subtle" fontSize="2xs" px={1.5} py={0.5}>
+                +{kol.niches.length - 2}
+              </Badge>
+            </Tooltip>
+          )}
         </HStack>
-        {kol.rate_updated_at && (
-          <HStack spacing={2}>
-            <Calendar size={14} color="#dc2626" />
-            <Text fontSize="xs" fontWeight="500" color="red.500">
-              Rate Updated:
-            </Text>
-            <Text fontSize="sm" fontWeight="600" noOfLines={1} color="red.700">
-              {formatDate(kol.rate_updated_at)}
-            </Text>
-          </HStack>
-        )}
-      </VStack>
-    </Td>
+      </Td>
 
-    {/* Rate Details */}
-    <Td px={6} py={5} minW="200px">
-      <Text
-        fontSize="sm"
-        color="gray.600"
-        fontWeight="600"
-        wordBreak="break-word"
-        whiteSpace="pre-wrap"
-      >
-        {kol.rateDetails || 'No details'}
-      </Text>
-    </Td>
+      {/* Rating */}
+      <Td px={3} py={3}>
+        <Text fontSize="sm" color="yellow.500">
+          {kol.rating > 0 ? '⭐'.repeat(kol.rating) : '-'}
+        </Text>
+      </Td>
 
-    {/* PIC */}
-      <Td px={6} py={5}>
-      <Badge 
-        colorScheme="green" 
-        variant="subtle"
-        borderRadius="full"
+      {/* PIC */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.picusername || kol.picUserName || kol.pic || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Date Added */}
+      <Td px={3} py={3}>
+        <VStack align="start" spacing={0.5}>
+          <Text fontSize="xs" color="gray.600">
+            {formatDate(kol.submission_date || kol.created_at || kol.createdAt)}
+          </Text>
+          {kol.rate_updated_at && (
+            <Tooltip label="Rate last updated" fontSize="xs">
+              <Text fontSize="2xs" color="red.500">
+                {formatDate(kol.rate_updated_at)}
+              </Text>
+            </Tooltip>
+          )}
+        </VStack>
+      </Td>
+
+      {/* Actions - Sticky Right */}
+      <Td
         px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
+        py={3}
+        position="sticky"
+        right={0}
+        bg={isSelected ? 'blue.50' : 'white'}
+        boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
+        borderLeft="1px solid"
+        borderColor="gray.200"
+        _hover={{ bg: isSelected ? 'blue.50' : 'gray.50' }}
       >
-        {kol.picUserName || kol.pic || 'N/A'}
-      </Badge>
-    </Td>
-
-    {/* Actions */}
-    <Td px={6} py={5}>
-      <HStack spacing={2}>
-        <IconButton
-          size="sm"
-          icon={<Eye size={16} />}
-          onClick={() => onView(kol)}
-          colorScheme="blue"
-          variant="outline"
-          aria-label="View KOL"
-          borderRadius="lg"
-          _hover={{
-            bg: 'blue.50',
-            transform: 'scale(1.1)',
-            borderColor: 'blue.400'
-          }}
-          transition="all 0.2s ease"
-        />
-        {canEdit && (
-          <IconButton
-            size="sm"
-            icon={<Edit size={16} />}
-            onClick={() => onEdit(kol)}
-            colorScheme="green"
-            variant="outline"
-            aria-label="Edit KOL"
-            borderRadius="lg"
-            _hover={{
-              bg: 'green.50',
-              transform: 'scale(1.1)',
-              borderColor: 'green.400'
-            }}
-            transition="all 0.2s ease"
-          />
-        )}
-        {canDelete && (
-          <IconButton
-            size="sm"
-            icon={<Trash2 size={16} />}
-            onClick={() => onDelete(kol.id)}
-            colorScheme="red"
-            variant="outline"
-            aria-label="Delete KOL"
-            borderRadius="lg"
-            _hover={{
-              bg: 'red.50',
-              transform: 'scale(1.1)',
-              borderColor: 'red.400'
-            }}
-            transition="all 0.2s ease"
-          />
-        )}
-      </HStack>
-    </Td>
-  </Tr>
+        <HStack spacing={1}>
+          <Tooltip label="View Details" fontSize="xs">
+            <IconButton
+              size="sm"
+              icon={<Eye size={14} />}
+              onClick={() => onView(kol)}
+              colorScheme="blue"
+              variant="ghost"
+              aria-label="View"
+            />
+          </Tooltip>
+          {canEdit && (
+            <Tooltip label="Edit" fontSize="xs">
+              <IconButton
+                size="sm"
+                icon={<Edit size={14} />}
+                onClick={() => onEdit(kol)}
+                colorScheme="green"
+                variant="ghost"
+                aria-label="Edit"
+              />
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip label="Delete" fontSize="xs">
+              <IconButton
+                size="sm"
+                icon={<Trash2 size={14} />}
+                onClick={() => onDelete(kol.id)}
+                colorScheme="red"
+                variant="ghost"
+                aria-label="Delete"
+              />
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
+    </Tr>
   );
 });
 
@@ -587,6 +494,7 @@ const SocialMediaKOL = () => {
   const [selectedRace, setSelectedRace] = useState('All Races');
   const [selectedHijab, setSelectedHijab] = useState('All');
   const [selectedPic, setSelectedPic] = useState('All PICs');
+  const [selectedRating, setSelectedRating] = useState('All Ratings');
   const [editingKOL, setEditingKOL] = useState(null);
   const [viewingKOL, setViewingKOL] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -595,15 +503,13 @@ const SocialMediaKOL = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const searchTimeoutRef = useRef(null);
-  
-  const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
-  const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
-  const toast = useToast();
+  const [selectedKOLs, setSelectedKOLs] = useState(new Set());
 
-  // Glassmorphism colors
-  const glassBg = useColorModeValue('rgba(255, 255, 255, 0.25)', 'rgba(26, 32, 44, 0.25)');
-  const glassBorder = useColorModeValue('rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.18)');
-  const glassShadow = useColorModeValue('0 8px 32px 0 rgba(31, 38, 135, 0.37)', '0 8px 32px 0 rgba(0, 0, 0, 0.37)');
+  const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
+
+  const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
+  const { isOpen: isProposalOpen, onOpen: onProposalOpen, onClose: onProposalClose } = useDisclosure();
+  const toast = useToast();
 
   // Filter options
   const GENDERS = ['Male', 'Female', 'Other'];
@@ -618,20 +524,20 @@ const SocialMediaKOL = () => {
       try {
         // Get all KOLs and filter for social media related types
         const allKOLs = await loadKOLs();
-        
+
         // Check if allKOLs is valid and is an array
         if (!allKOLs || !Array.isArray(allKOLs)) {
           console.error('loadKOLs returned invalid data:', allKOLs);
           setKolData([]);
           return;
         }
-        
-        const socialMediaKOLs = allKOLs.filter(kol => 
-          kol.kolType === 'social-media' || 
-          kol.kolType === 'instagram' || 
+
+        const socialMediaKOLs = allKOLs.filter(kol =>
+          kol.kolType === 'social-media' ||
+          kol.kolType === 'instagram' ||
           kol.kolType === 'tiktok' ||
-          kol.instagram || 
-          kol.tiktok || 
+          kol.instagram ||
+          kol.tiktok ||
           kol.facebook
         );
         setKolData(socialMediaKOLs);
@@ -650,7 +556,7 @@ const SocialMediaKOL = () => {
         setIsLoading(false);
       }
     };
-    
+
     loadSocialMediaKOLs();
   }, [loadKOLs, toast]);
 
@@ -663,20 +569,26 @@ const SocialMediaKOL = () => {
       filtered = filtered.filter(kol => {
         // Safe string comparison helper
         const matchesText = (field) => field && field.toLowerCase().includes(searchLower);
-        
+
         return (
           matchesText(kol.name) ||
+          matchesText(kol.contact_number) ||
           matchesText(kol.contactNumber) ||
           matchesText(kol.tier) ||
           matchesText(kol.gender) ||
           matchesText(kol.race) ||
           matchesText(kol.address) ||
           matchesText(kol.pic) ||
+          matchesText(kol.picusername) ||
+          matchesText(kol.picUserName) ||
+          matchesText(kol.hair_style) ||
           matchesText(kol.hairStyle) ||
           matchesText(kol.hijabStatus) ||
+          matchesText(kol.rate_details) ||
           matchesText(kol.rateDetails) ||
-          (kol.niches && Array.isArray(kol.niches) && 
-           kol.niches.some(niche => matchesText(niche)))
+          matchesText(kol.notes) ||
+          (kol.niches && Array.isArray(kol.niches) &&
+            kol.niches.some(niche => matchesText(niche)))
         );
       });
     }
@@ -702,15 +614,20 @@ const SocialMediaKOL = () => {
     }
 
     if (selectedHijab !== 'All') {
-      filtered = filtered.filter(kol => (kol.hairStyle || kol.hijabStatus) === selectedHijab);
+      filtered = filtered.filter(kol => (kol.hair_style || kol.hairStyle || kol.hijabStatus) === selectedHijab);
     }
 
     if (selectedPic !== 'All PICs') {
-      filtered = filtered.filter(kol => kol.pic === selectedPic);
+      filtered = filtered.filter(kol => (kol.picusername || kol.picUserName || kol.pic) === selectedPic);
+    }
+
+    if (selectedRating !== 'All Ratings') {
+      const ratingValue = parseInt(selectedRating);
+      filtered = filtered.filter(kol => (kol.rating || 0) === ratingValue);
     }
 
     return filtered;
-  }, [kolData, debouncedSearchTerm, selectedTier, selectedNiche, selectedState, selectedGender, selectedRace, selectedHijab, selectedPic]);
+  }, [kolData, debouncedSearchTerm, selectedTier, selectedNiche, selectedState, selectedGender, selectedRace, selectedHijab, selectedPic, selectedRating]);
 
   // Pagination logic
   const paginatedData = useMemo(() => {
@@ -726,11 +643,11 @@ const SocialMediaKOL = () => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 300); // 300ms delay
-    
+
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
@@ -745,6 +662,23 @@ const SocialMediaKOL = () => {
 
   const handleSave = useCallback(async (kolData) => {
     try {
+      console.log('💾 SAVING KOL DATA:', {
+        id: editingKOL?.id,
+        name: kolData.name,
+        rate: kolData.rate,
+        instagramrate: kolData.instagramrate,
+        tiktokrate: kolData.tiktokrate,
+        facebookrate: kolData.facebookrate,
+        twitterrate: kolData.twitterrate,
+        threadrate: kolData.threadrate,
+        blograte: kolData.blograte,
+        youtuberate: kolData.youtuberate,
+        xhsrate: kolData.xhsrate,
+        lemon8rate: kolData.lemon8rate,
+        sellingPrice: kolData.sellingPrice,
+        rateUpdatedAt: kolData.rateUpdatedAt
+      });
+
       if (editingKOL) {
         // Update existing KOL
         await updateKOL(editingKOL.id, kolData);
@@ -766,21 +700,21 @@ const SocialMediaKOL = () => {
           isClosable: true,
         });
       }
-      
+
       // Reload data from database
       const allKOLs = await loadKOLs();
       if (allKOLs && Array.isArray(allKOLs)) {
-        const socialMediaKOLs = allKOLs.filter(kol => 
-          kol.kolType === 'social-media' || 
-          kol.kolType === 'instagram' || 
+        const socialMediaKOLs = allKOLs.filter(kol =>
+          kol.kolType === 'social-media' ||
+          kol.kolType === 'instagram' ||
           kol.kolType === 'tiktok' ||
-          kol.instagram || 
-          kol.tiktok || 
+          kol.instagram ||
+          kol.tiktok ||
           kol.facebook
         );
         setKolData(socialMediaKOLs);
       }
-      
+
       setEditingKOL(null);
       onFormClose();
     } catch (error) {
@@ -809,21 +743,21 @@ const SocialMediaKOL = () => {
     if (window.confirm('Are you sure you want to delete this KOL record?')) {
       try {
         await deleteKOL(kolId);
-        
+
         // Reload data from database
         const allKOLs = await loadKOLs();
         if (allKOLs && Array.isArray(allKOLs)) {
-          const socialMediaKOLs = allKOLs.filter(kol => 
-            kol.kolType === 'social-media' || 
-            kol.kolType === 'instagram' || 
+          const socialMediaKOLs = allKOLs.filter(kol =>
+            kol.kolType === 'social-media' ||
+            kol.kolType === 'instagram' ||
             kol.kolType === 'tiktok' ||
-            kol.instagram || 
-            kol.tiktok || 
+            kol.instagram ||
+            kol.tiktok ||
             kol.facebook
           );
           setKolData(socialMediaKOLs);
         }
-        
+
         toast({
           title: 'Deleted!',
           description: 'KOL record deleted successfully',
@@ -875,511 +809,409 @@ const SocialMediaKOL = () => {
     setSelectedRace('All Races');
     setSelectedHijab('All');
     setSelectedPic('All PICs');
+    setSelectedRating('All Ratings');
   }, []);
+
+  // Bulk selection handlers
+  const handleSelectAll = useCallback((checked) => {
+    if (checked) {
+      const allIds = new Set(paginatedData.map(kol => kol.id));
+      setSelectedKOLs(allIds);
+    } else {
+      setSelectedKOLs(new Set());
+    }
+  }, [paginatedData]);
+
+  const handleSelectKOL = useCallback((kolId, checked) => {
+    setSelectedKOLs(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(kolId);
+      } else {
+        newSet.delete(kolId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedKOLs.size === 0) {
+      toast({
+        title: 'No Selection',
+        description: 'Please select KOLs to delete',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${selectedKOLs.size} selected KOL(s)?`)) {
+      try {
+        const deletePromises = Array.from(selectedKOLs).map(id => deleteKOL(id));
+        await Promise.all(deletePromises);
+
+        // Reload data
+        const allKOLs = await loadKOLs();
+        if (allKOLs && Array.isArray(allKOLs)) {
+          const socialMediaKOLs = allKOLs.filter(kol =>
+            kol.kolType === 'social-media' ||
+            kol.kolType === 'instagram' ||
+            kol.kolType === 'tiktok' ||
+            kol.instagram ||
+            kol.tiktok ||
+            kol.facebook
+          );
+          setKolData(socialMediaKOLs);
+        }
+
+        setSelectedKOLs(new Set());
+        toast({
+          title: 'Deleted!',
+          description: `Successfully deleted ${selectedKOLs.size} KOL(s)`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error!',
+          description: 'Failed to delete some KOL records',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }
+  }, [selectedKOLs, deleteKOL, loadKOLs, toast]);
+
+  const handleGenerateProposal = useCallback(() => {
+    if (selectedKOLs.size === 0) {
+      toast({
+        title: 'No Selection',
+        description: 'Please select KOLs to generate proposal',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    onProposalOpen();
+  }, [selectedKOLs, toast, onProposalOpen]);
+
+  const handleGeneratePDF = useCallback(async (companyName) => {
+    try {
+      const kolIds = Array.from(selectedKOLs);
+
+      const response = await fetch('http://localhost:3001/api/proposals/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyName,
+          kolIds
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate proposal');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `proposal-${companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: 'Success',
+        description: 'Proposal generated successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error generating proposal:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate proposal',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      throw error; // Re-throw for modal to handle loading state
+    }
+  }, [selectedKOLs, toast]);
 
   return (
     <Box
       minH="100vh"
-      bgGradient="linear(to-br, gray.50, red.50, white)"
-      py={{ base: 2, md: 4 }}
-      px={{ base: 1, md: 2 }}
-      // Prevent copy for viewers
-      sx={!canCopy() ? {
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        MozUserSelect: 'none',
-        msUserSelect: 'none',
-        '& *': {
-          userSelect: 'none !important',
-          WebkitUserSelect: 'none !important',
-          MozUserSelect: 'none !important',
-          msUserSelect: 'none !important'
-        }
-      } : {}}
-      onCopy={(e) => {
-        if (!canCopy()) {
-          e.preventDefault();
-          toast({
-            title: 'Copy Disabled',
-            description: 'You do not have permission to copy content.',
-            status: 'warning',
-            duration: 3000,
-            isClosable: true,
-          });
-        }
-      }}
-      onCut={(e) => {
-        if (!canCopy()) {
-          e.preventDefault();
-        }
-      }}
+      bg="gray.50"
+      py={4}
+      px={4}
     >
-      <Container maxW="container.xl" px={{ base: 2, md: 4 }}>
-        <MotionBox
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <VStack spacing={{ base: 2, md: 3 }} align="stretch">
-       
+      <Container maxW="container.2xl">
+        <VStack spacing={4} align="stretch">
+          {/* Header with Bulk Actions */}
+          <Flex justify="space-between" align="center" gap={4} flexWrap="wrap">
+            <HStack spacing={3}>
+              <Text fontSize="2xl" fontWeight="bold" color="gray.800">
+                Social Media KOLs
+              </Text>
+              <Badge colorScheme="blue" fontSize="md" px={3} py={1} borderRadius="full">
+                {filteredData.length}
+              </Badge>
+            </HStack>
 
-            {/* Search and Filters - Compact */}
-            <Box 
-              bg="white"
-              border="1px solid"
-              borderColor="gray.100"
-              p={{ base: 2, md: 3 }}
-              borderRadius="lg"
-              boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
-            >
-              {/* Search Bar and Toggle */}
-              <Flex justify="space-between" align="center" mb={3}>
-                <InputGroup size="md" flex="1" mr={3}>
+            <HStack spacing={2}>
+              {selectedKOLs.size > 0 && (
+                <>
+                  <Badge colorScheme="blue" fontSize="sm" px={3} py={1} borderRadius="full">
+                    {selectedKOLs.size} selected
+                  </Badge>
+                  <Button
+                    size="sm"
+                    colorScheme="purple"
+                    leftIcon={<FileText size={16} />}
+                    onClick={handleGenerateProposal}
+                    isDisabled={!canEdit()}
+                  >
+                    Generate Proposal
+                  </Button>
+                  {canDelete() && (
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      leftIcon={<Trash2 size={16} />}
+                      onClick={handleBulkDelete}
+                    >
+                      Delete Selected
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedKOLs(new Set())}
+                  >
+                    Clear Selection
+                  </Button>
+                </>
+              )}
+              {canEdit() && (
+                <Button
+                  colorScheme="red"
+                  size="sm"
+                  onClick={() => {
+                    setEditingKOL(null);
+                    onFormOpen();
+                  }}
+                >
+                  + Add KOL
+                </Button>
+              )}
+            </HStack>
+          </Flex>
+
+          {/* Search and Filters */}
+          <Box bg="white" p={4} borderRadius="lg" boxShadow="sm">
+            <VStack spacing={3} align="stretch">
+              {/* Search Bar */}
+              <HStack spacing={3}>
+                <InputGroup flex={1}>
                   <InputLeftElement>
                     <Search size={16} color="#9ca3af" />
                   </InputLeftElement>
                   <Input
-                    bg="gray.50"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="lg"
-                    placeholder="Search KOLs by name, contact, tier, gender, race, location, niche..."
+                    placeholder="Search by name, contact, tier, location, niche..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    fontSize="sm"
-                    _focus={{
-                      borderColor: 'red.300',
-                      bg: 'white'
-                    }}
+                    size="md"
                   />
                 </InputGroup>
                 <Button
-                  size="sm"
-                  variant="outline"
-                  colorScheme="red"
+                  size="md"
+                  variant={showFilters ? 'solid' : 'outline'}
+                  colorScheme="gray"
                   onClick={() => setShowFilters(!showFilters)}
-                  leftIcon={<Search size={14} />}
+                  leftIcon={showFilters ? <ChevronDown size={16} /> : <Search size={16} />}
                 >
-                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                  Filters
                 </Button>
-              </Flex>
-
-              {/* Filters Row - Collapsible */}
-              {showFilters && (
-                <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(6, 1fr)", xl: "repeat(7, 1fr)" }} gap={2}>
-                {/* Tier Filter */}
-                <Box>
-                  <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
-                    Tier
-                  </Text>
-                  <Select
-                    size="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    value={selectedTier}
-                    onChange={(e) => setSelectedTier(e.target.value)}
-                    fontSize="xs"
-                    _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
-                  >
-                    <option value="All Tiers">🏆 All</option>
-                    {TIERS.map(tier => (
-                      <option key={tier} value={tier}>{tier.split(' ')[0]}</option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* Niche Filter */}
-                <Box>
-                  <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
-                    Niche
-                  </Text>
-                  <Select
-                    size="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    value={selectedNiche}
-                    onChange={(e) => setSelectedNiche(e.target.value)}
-                    fontSize="xs"
-                    _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
-                  >
-                    <option value="All Niches">🏷️ All</option>
-                    {NICHES.map(niche => (
-                      <option key={niche} value={niche}>{niche}</option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* Location Filter */}
-                <Box>
-                  <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
-                    Location
-                  </Text>
-                  <Select
-                    size="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    value={selectedState}
-                    onChange={(e) => setSelectedState(e.target.value)}
-                    fontSize="xs"
-                    _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
-                  >
-                    <option value="All States">📍 All</option>
-                    {STATES.map(state => (
-                      <option key={state} value={state}>{state}</option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* Gender Filter */}
-                <Box>
-                  <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
-                    Gender
-                  </Text>
-                  <Select
-                    size="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    value={selectedGender}
-                    onChange={(e) => setSelectedGender(e.target.value)}
-                    fontSize="xs"
-                    _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
-                  >
-                    <option value="All Genders">👥 All</option>
-                    {GENDERS.map(gender => (
-                      <option key={gender} value={gender}>{gender}</option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* Race Filter */}
-                <Box>
-                  <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
-                    Race
-                  </Text>
-                  <Select
-                    size="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    value={selectedRace}
-                    onChange={(e) => setSelectedRace(e.target.value)}
-                    fontSize="xs"
-                    _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
-                  >
-                    <option value="All Races">🌍 All</option>
-                    {RACES.map(race => (
-                      <option key={race} value={race}>{race}</option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* Hijab Filter */}
-                <Box>
-                  <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
-                    Hair
-                  </Text>
-                  <Select
-                    size="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    value={selectedHijab}
-                    onChange={(e) => setSelectedHijab(e.target.value)}
-                    fontSize="xs"
-                    _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
-                  >
-                    <option value="All">💄 All</option>
-                    {HIJAB_OPTIONS.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </Select>
-                </Box>
-
-                {/* PIC Filter */}
-                <Box>
-                  <Text fontSize="xs" color="red.600" fontWeight="600" mb={1} textTransform="uppercase" letterSpacing="wide">
-                    PIC
-                  </Text>
-                  <Select
-                    size="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    value={selectedPic}
-                    onChange={(e) => setSelectedPic(e.target.value)}
-                    fontSize="xs"
-                    _focus={{ borderColor: 'red.400', boxShadow: '0 0 0 1px rgba(220, 38, 38, 0.3)' }}
-                  >
-                    <option value="All PICs">👤 All</option>
-                    {PICS.map(pic => (
-                      <option key={pic} value={pic}>{pic}</option>
-                    ))}
-                  </Select>
-                </Box>
-
-              </Grid>
-              )}
-
-              {/* Results Summary & Quick Actions */}
-              <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
-                <VStack align="start" spacing={1}>
-                  <HStack spacing={3}>
-                    <Badge 
-                      colorScheme="red" 
-                      variant="subtle" 
-                      borderRadius="full" 
-                      px={3} 
-                      py={1}
-                      fontSize="xs"
-                      fontWeight="600"
-                    >
-                      {filteredData.length} Results
-                    </Badge>
-                    <Badge 
-                      colorScheme="blue" 
-                      variant="subtle" 
-                      borderRadius="full" 
-                      px={3} 
-                      py={1}
-                      fontSize="xs"
-                      fontWeight="600"
-                    >
-                      {kolData.length} Total
-                    </Badge>
-                    {filteredData.length !== kolData.length && (
-                      <Badge 
-                        colorScheme="green" 
-                        variant="subtle" 
-                        borderRadius="full" 
-                        px={3} 
-                        py={1}
-                        fontSize="xs"
-                        fontWeight="600"
-                      >
-                        {kolData.length - filteredData.length} Hidden
-                      </Badge>
-                    )}
-                  </HStack>
-                  <Text fontSize="xs" color="gray.500" fontWeight="500">
-                    {searchTerm || selectedTier !== 'All Tiers' || selectedNiche !== 'All Niches' || selectedState !== 'All States' || selectedGender !== 'All Genders' || selectedRace !== 'All Races' || selectedHijab !== 'All' || selectedPic !== 'All PICs'
-                      ? 'Active filters applied' 
-                      : 'No filters applied'
-                    }
-                  </Text>
-                </VStack>
-
-                {/* Quick Filter Actions */}
-                <HStack spacing={2}>
-                  {(searchTerm || selectedTier !== 'All Tiers' || selectedNiche !== 'All Niches' || selectedState !== 'All States' || selectedGender !== 'All Genders' || selectedRace !== 'All Races' || selectedHijab !== 'All' || selectedPic !== 'All PICs') && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="red"
-                      onClick={clearAllFilters}
-                      borderRadius="lg"
-                      fontSize="xs"
-                      fontWeight="500"
-                      _hover={{
-                        bg: 'rgba(254, 226, 226, 0.3)',
-                        transform: 'scale(1.05)'
-                      }}
-                      transition="all 0.2s ease"
-                    >
-                      🗑️ Clear All
+                {(searchTerm || selectedTier !== 'All Tiers' || selectedNiche !== 'All Niches' ||
+                  selectedState !== 'All States' || selectedGender !== 'All Genders' ||
+                  selectedRace !== 'All Races' || selectedHijab !== 'All' || selectedPic !== 'All PICs') && (
+                    <Button size="md" variant="ghost" colorScheme="red" onClick={clearAllFilters}>
+                      Clear All
                     </Button>
                   )}
-                </HStack>
-              </Flex>
-            </Box>
+              </HStack>
 
-            {/* Data Table - Main Focus */}
-            <Box 
-              overflowX="auto" 
-              bg="white"
-              borderRadius="xl"
-              boxShadow="0 4px 20px rgba(0, 0, 0, 0.1)"
-              border="1px solid"
-              borderColor="gray.100"
-            >
-              <Table variant="simple" size="lg">
-                <Thead position="sticky" top={0} bg="rgba(220, 38, 38, 0.15)" zIndex={1} borderBottom="2px solid" borderColor="rgba(220, 38, 38, 0.3)">
+              {/* Filter Options */}
+              {showFilters && (
+                <Grid templateColumns="repeat(auto-fit, minmax(150px, 1fr))" gap={3}>
+                  <Select size="sm" value={selectedTier} onChange={(e) => setSelectedTier(e.target.value)}>
+                    <option value="All Tiers">All Tiers</option>
+                    {TIERS.map(tier => <option key={tier} value={tier}>{tier}</option>)}
+                  </Select>
+                  <Select size="sm" value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)}>
+                    <option value="All Niches">All Niches</option>
+                    {NICHES.map(niche => <option key={niche} value={niche}>{niche}</option>)}
+                  </Select>
+                  <Select size="sm" value={selectedState} onChange={(e) => setSelectedState(e.target.value)}>
+                    <option value="All States">All Locations</option>
+                    {STATES.map(state => <option key={state} value={state}>{state}</option>)}
+                  </Select>
+                  <Select size="sm" value={selectedGender} onChange={(e) => setSelectedGender(e.target.value)}>
+                    <option value="All Genders">All Genders</option>
+                    {GENDERS.map(gender => <option key={gender} value={gender}>{gender}</option>)}
+                  </Select>
+                  <Select size="sm" value={selectedRace} onChange={(e) => setSelectedRace(e.target.value)}>
+                    <option value="All Races">All Races</option>
+                    {RACES.map(race => <option key={race} value={race}>{race}</option>)}
+                  </Select>
+                  <Select size="sm" value={selectedHijab} onChange={(e) => setSelectedHijab(e.target.value)}>
+                    <option value="All">All Hair Styles</option>
+                    {HIJAB_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                  <Select size="sm" value={selectedPic} onChange={(e) => setSelectedPic(e.target.value)}>
+                    <option value="All PICs">All PICs</option>
+                    {PICS.map(pic => <option key={pic} value={pic}>{pic}</option>)}
+                  </Select>
+                  <Select size="sm" value={selectedRating} onChange={(e) => setSelectedRating(e.target.value)}>
+                    <option value="All Ratings">All Ratings</option>
+                    {[5, 4, 3, 2, 1, 0].map(r => <option key={r} value={r}>{'⭐'.repeat(r) || 'No rating'}</option>)}
+                  </Select>
+                </Grid>
+              )}
+
+              {/* Results Summary */}
+              <HStack spacing={3} fontSize="sm" color="gray.600">
+                <Text>Showing {paginatedData.length} of {filteredData.length} results</Text>
+                {filteredData.length !== kolData.length && (
+                  <Text color="blue.600" fontWeight="500">
+                    ({kolData.length - filteredData.length} filtered out)
+                  </Text>
+                )}
+              </HStack>
+            </VStack>
+          </Box>
+
+          {/* Pagination - Above Table */}
+          {totalPages > 1 && (
+            <Flex justify="space-between" align="center" bg="white" p={3} borderRadius="lg" boxShadow="sm">
+              <Text fontSize="sm" color="gray.600">
+                Page {currentPage} of {totalPages} ({filteredData.length} total results)
+              </Text>
+
+              <HStack spacing={2}>
+                <Button
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  isDisabled={currentPage === 1}
+                  variant="outline"
+                >
+                  First
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  isDisabled={currentPage === 1}
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+
+                <HStack spacing={1}>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    if (pageNum > totalPages) return null;
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        size="sm"
+                        variant={currentPage === pageNum ? "solid" : "outline"}
+                        colorScheme={currentPage === pageNum ? "blue" : "gray"}
+                        onClick={() => setCurrentPage(pageNum)}
+                        minW="40px"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </HStack>
+
+                <Button
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  isDisabled={currentPage === totalPages}
+                  variant="outline"
+                >
+                  Next
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  isDisabled={currentPage === totalPages}
+                  variant="outline"
+                >
+                  Last
+                </Button>
+              </HStack>
+            </Flex>
+          )}
+
+          {/* Data Table - Compact & Modern with Fixed Height */}
+          <Box
+            bg="white"
+            borderRadius="lg"
+            boxShadow="sm"
+            overflow="hidden"
+            height="calc(100vh - 420px)"
+            display="flex"
+            flexDirection="column"
+          >
+            <Box overflowX="auto" overflowY="auto" flex="1">
+              <Table variant="simple" size="sm">
+                <Thead position="sticky" top={0} bg="gray.100" zIndex={2}>
                   <Tr>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="150px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      KOL Details
+                    <Th w="40px" px={3}>
+                      <Checkbox
+                        isChecked={paginatedData.length > 0 && selectedKOLs.size === paginatedData.length}
+                        isIndeterminate={selectedKOLs.size > 0 && selectedKOLs.size < paginatedData.length}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        colorScheme="blue"
+                        size="lg"
+                      />
                     </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="120px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Platforms
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="280px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Platform Rates (RM)
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="100px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Tier
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="90px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Gender
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="180px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Niche
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="120px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Hair Style
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="90px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Race
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="120px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Address
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="150px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Contact
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="100px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Date
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="200px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Rate Details
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="90px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      PIC
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="130px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
+                    <Th px={3}>Name</Th>
+                    <Th px={3}>Contact</Th>
+                    <Th px={3}>Platforms</Th>
+                    <Th px={3}>Rates (RM)</Th>
+                    <Th px={3}>Rate Details</Th>
+                    <Th px={3}>Tier</Th>
+                    <Th px={3}>Gender</Th>
+                    <Th px={3}>Race</Th>
+                    <Th px={3}>Hair</Th>
+                    <Th px={3}>Location</Th>
+                    <Th px={3}>Niches</Th>
+                    <Th px={3}>Rating</Th>
+                    <Th px={3}>PIC</Th>
+                    <Th px={3}>Date</Th>
+                    <Th
+                      position="sticky"
+                      right={0}
+                      bg="gray.100"
+                      px={3}
+                      boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
                     >
                       Actions
                     </Th>
@@ -1388,22 +1220,20 @@ const SocialMediaKOL = () => {
                 <Tbody>
                   {isLoading ? (
                     <Tr>
-                      <Td colSpan={13} py={20}>
+                      <Td colSpan={16} py={20}>
                         <Center>
-                          <VStack spacing={4}>
-                            <Spinner size="xl" color="red.500" thickness="4px" />
-                            <Text color="gray.600" fontWeight="500">
-                              Loading KOLs...
-                            </Text>
+                          <VStack spacing={3}>
+                            <Spinner size="xl" color="blue.500" thickness="3px" />
+                            <Text color="gray.600">Loading KOLs...</Text>
                           </VStack>
                         </Center>
                       </Td>
                     </Tr>
                   ) : paginatedData.length === 0 ? (
                     <Tr>
-                      <Td colSpan={13} py={20}>
+                      <Td colSpan={16} py={20}>
                         <Center>
-                          <VStack spacing={4}>
+                          <VStack spacing={3}>
                             <Text fontSize="lg" color="gray.500" fontWeight="500">
                               No KOLs found
                             </Text>
@@ -1427,110 +1257,21 @@ const SocialMediaKOL = () => {
                         formatDate={formatDate}
                         canEdit={canEdit()}
                         canDelete={canDelete()}
+                        isSelected={selectedKOLs.has(kol.id)}
+                        onSelect={handleSelectKOL}
                       />
                     ))
                   )}
                 </Tbody>
               </Table>
             </Box>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <Box 
-                bg="white"
-                border="1px solid"
-                borderColor="gray.100"
-                p={4}
-                borderRadius="lg"
-                boxShadow="0 1px 3px rgba(0, 0, 0, 0.06)"
-                mt={4}
-              >
-                <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
-                  <Text fontSize="sm" color="gray.600" fontWeight="500">
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} results
-                  </Text>
-                  
-                  <HStack spacing={2}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="red"
-                      onClick={() => setCurrentPage(1)}
-                      isDisabled={currentPage === 1}
-                      borderRadius="lg"
-                    >
-                      First
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="red"
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      isDisabled={currentPage === 1}
-                      borderRadius="lg"
-                    >
-                      Previous
-                    </Button>
-                    
-                    <HStack spacing={1}>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                        if (pageNum > totalPages) return null;
-                        
-                        return (
-                          <Button
-                            key={pageNum}
-                            size="sm"
-                            variant={currentPage === pageNum ? "solid" : "outline"}
-                            colorScheme="red"
-                            onClick={() => setCurrentPage(pageNum)}
-                            borderRadius="lg"
-                            minW="40px"
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
-                    </HStack>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="red"
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      isDisabled={currentPage === totalPages}
-                      borderRadius="lg"
-                    >
-                      Next
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="red"
-                      onClick={() => setCurrentPage(totalPages)}
-                      isDisabled={currentPage === totalPages}
-                      borderRadius="lg"
-                    >
-                      Last
-                    </Button>
-                  </HStack>
-                </Flex>
-              </Box>
-            )}
-          </VStack>
-        </MotionBox>
+          </Box>
+        </VStack>
 
         {/* Add/Edit Form Modal */}
         <Modal isOpen={isFormOpen} onClose={onFormClose} size="6xl" scrollBehavior="inside">
           <ModalOverlay backdropFilter="blur(10px)" />
-          <ModalContent 
-            bg={glassBg}
-            backdropFilter="blur(20px)"
-            border="1px solid"
-            borderColor={glassBorder}
-            borderRadius="2xl"
-            boxShadow={glassShadow}
-          >
+          <ModalContent>
             <ModalHeader color="red.600" fontWeight="700">
               {editingKOL ? 'Edit KOL' : 'Add New Social Media KOL'}
             </ModalHeader>
@@ -1548,10 +1289,10 @@ const SocialMediaKOL = () => {
         </Modal>
 
 
-                 {/* View KOL Modal */}
+        {/* View KOL Modal */}
         <Modal isOpen={isViewOpen} onClose={onViewClose} size="2xl">
           <ModalOverlay backdropFilter="blur(25px)" bg="rgba(0, 0, 0, 0.3)" />
-          <ModalContent 
+          <ModalContent
             bg="rgba(255, 255, 255, 0.1)"
             backdropFilter="blur(40px)"
             border="1px solid"
@@ -1571,7 +1312,7 @@ const SocialMediaKOL = () => {
               opacity: 0.8
             }}
           >
-            <ModalHeader 
+            <ModalHeader
               bg="rgba(220, 38, 38, 0.1)"
               backdropFilter="blur(20px)"
               color="red.700"
@@ -1597,8 +1338,8 @@ const SocialMediaKOL = () => {
                 {viewingKOL?.name}
               </Flex>
             </ModalHeader>
-            <ModalCloseButton 
-              color="red.600" 
+            <ModalCloseButton
+              color="red.600"
               bg="rgba(255, 255, 255, 0.2)"
               borderRadius="full"
               size="sm"
@@ -1611,7 +1352,7 @@ const SocialMediaKOL = () => {
                 <VStack spacing={4} align="stretch">
                   {/* Quick Stats Row */}
                   <SimpleGrid columns={3} spacing={3}>
-                    <Box 
+                    <Box
                       bg="rgba(255, 255, 255, 0.1)"
                       backdropFilter="blur(20px)"
                       p={4}
@@ -1626,81 +1367,140 @@ const SocialMediaKOL = () => {
                         💰 Platform Rates
                       </Text>
                       <VStack spacing={2} mt={2}>
-                        {viewingKOL.instagramRate > 0 && (
+                        {(viewingKOL.rate && parseFloat(viewingKOL.rate) > 0) && (
+                          <HStack spacing={2} justify="space-between" w="full" bg="rgba(34, 197, 94, 0.1)" p={2} borderRadius="md">
+                            <HStack spacing={2}>
+                              <DollarSign size={14} color="#22c55e" />
+                              <Text fontSize="sm" color="green.700" fontWeight="600">General Rate</Text>
+                            </HStack>
+                            <Text fontSize="md" color="green.800" fontWeight="800" fontFamily="mono">
+                              RM{parseFloat(viewingKOL.rate).toLocaleString()}
+                            </Text>
+                          </HStack>
+                        )}
+                        {parseFloat(viewingKOL.instagramrate || viewingKOL.instagramRate) > 0 && (
                           <HStack spacing={2} justify="space-between" w="full" bg="rgba(236, 72, 153, 0.1)" p={2} borderRadius="md">
                             <HStack spacing={2}>
                               <Instagram size={14} color="#E4405F" />
                               <Text fontSize="sm" color="pink.700" fontWeight="600">Instagram</Text>
                             </HStack>
                             <Text fontSize="md" color="pink.800" fontWeight="800" fontFamily="mono">
-                              RM{viewingKOL.instagramRate.toLocaleString()}
+                              RM{parseFloat(viewingKOL.instagramrate || viewingKOL.instagramRate).toLocaleString()}
                             </Text>
                           </HStack>
                         )}
-                        {viewingKOL.tiktokRate > 0 && (
+                        {parseFloat(viewingKOL.tiktokrate || viewingKOL.tiktokRate) > 0 && (
                           <HStack spacing={2} justify="space-between" w="full" bg="rgba(0, 0, 0, 0.05)" p={2} borderRadius="md">
                             <HStack spacing={2}>
                               <Text fontSize="sm">🎵</Text>
                               <Text fontSize="sm" color="gray.700" fontWeight="600">TikTok</Text>
                             </HStack>
                             <Text fontSize="md" color="gray.800" fontWeight="800" fontFamily="mono">
-                              RM{viewingKOL.tiktokRate.toLocaleString()}
+                              RM{parseFloat(viewingKOL.tiktokrate || viewingKOL.tiktokRate).toLocaleString()}
                             </Text>
                           </HStack>
                         )}
-                        {viewingKOL.facebookRate > 0 && (
+                        {parseFloat(viewingKOL.facebookrate || viewingKOL.facebookRate) > 0 && (
                           <HStack spacing={2} justify="space-between" w="full" bg="rgba(59, 130, 246, 0.1)" p={2} borderRadius="md">
                             <HStack spacing={2}>
                               <Facebook size={14} color="#1877F2" />
                               <Text fontSize="sm" color="blue.700" fontWeight="600">Facebook</Text>
                             </HStack>
                             <Text fontSize="md" color="blue.800" fontWeight="800" fontFamily="mono">
-                              RM{viewingKOL.facebookRate.toLocaleString()}
+                              RM{parseFloat(viewingKOL.facebookrate || viewingKOL.facebookRate).toLocaleString()}
                             </Text>
                           </HStack>
                         )}
-                        {viewingKOL.twitterRate > 0 && (
+                        {parseFloat(viewingKOL.twitterrate || viewingKOL.twitterRate) > 0 && (
                           <HStack spacing={2} justify="space-between" w="full" bg="rgba(29, 161, 242, 0.1)" p={2} borderRadius="md">
                             <HStack spacing={2}>
                               <Twitter size={14} color="#1DA1F2" />
                               <Text fontSize="sm" color="blue.700" fontWeight="600">Twitter</Text>
                             </HStack>
                             <Text fontSize="md" color="blue.800" fontWeight="800" fontFamily="mono">
-                              RM{viewingKOL.twitterRate.toLocaleString()}
+                              RM{parseFloat(viewingKOL.twitterrate || viewingKOL.twitterRate).toLocaleString()}
                             </Text>
                           </HStack>
                         )}
-                        {viewingKOL.threadRate > 0 && (
+                        {parseFloat(viewingKOL.threadrate || viewingKOL.threadRate) > 0 && (
                           <HStack spacing={2} justify="space-between" w="full" bg="rgba(147, 51, 234, 0.1)" p={2} borderRadius="md">
                             <HStack spacing={2}>
                               <Text fontSize="sm">🧵</Text>
                               <Text fontSize="sm" color="purple.700" fontWeight="600">Threads</Text>
                             </HStack>
                             <Text fontSize="md" color="purple.800" fontWeight="800" fontFamily="mono">
-                              RM{viewingKOL.threadRate.toLocaleString()}
+                              RM{parseFloat(viewingKOL.threadrate || viewingKOL.threadRate).toLocaleString()}
                             </Text>
                           </HStack>
                         )}
-                        {viewingKOL.blogRate > 0 && (
+                        {parseFloat(viewingKOL.blograte || viewingKOL.blogRate) > 0 && (
                           <HStack spacing={2} justify="space-between" w="full" bg="rgba(249, 115, 22, 0.1)" p={2} borderRadius="md">
                             <HStack spacing={2}>
                               <FileText size={14} color="#F97316" />
                               <Text fontSize="sm" color="orange.700" fontWeight="600">Blog</Text>
                             </HStack>
                             <Text fontSize="md" color="orange.800" fontWeight="800" fontFamily="mono">
-                              RM{viewingKOL.blogRate.toLocaleString()}
+                              RM{parseFloat(viewingKOL.blograte || viewingKOL.blogRate).toLocaleString()}
                             </Text>
                           </HStack>
                         )}
-                        {(viewingKOL.instagramRate === 0 && viewingKOL.tiktokRate === 0 && viewingKOL.facebookRate === 0 && viewingKOL.twitterRate === 0 && viewingKOL.threadRate === 0 && viewingKOL.blogRate === 0) && (
-                          <Text fontSize="sm" color="gray.500" fontStyle="italic" bg="gray.50" p={3} borderRadius="md">
-                            No platform rates set
-                          </Text>
+                        {parseFloat(viewingKOL.youtuberate || viewingKOL.youtubeRate) > 0 && (
+                          <HStack spacing={2} justify="space-between" w="full" bg="rgba(220, 38, 38, 0.1)" p={2} borderRadius="md">
+                            <HStack spacing={2}>
+                              <Text fontSize="sm">▶️</Text>
+                              <Text fontSize="sm" color="red.700" fontWeight="600">YouTube</Text>
+                            </HStack>
+                            <Text fontSize="md" color="red.800" fontWeight="800" fontFamily="mono">
+                              RM{parseFloat(viewingKOL.youtuberate || viewingKOL.youtubeRate).toLocaleString()}
+                            </Text>
+                          </HStack>
                         )}
+                        {parseFloat(viewingKOL.xhsrate || viewingKOL.xhsRate) > 0 && (
+                          <HStack spacing={2} justify="space-between" w="full" bg="rgba(220, 38, 38, 0.1)" p={2} borderRadius="md">
+                            <HStack spacing={2}>
+                              <Text fontSize="sm">📕</Text>
+                              <Text fontSize="sm" color="red.700" fontWeight="600">XHS</Text>
+                            </HStack>
+                            <Text fontSize="md" color="red.800" fontWeight="800" fontFamily="mono">
+                              RM{parseFloat(viewingKOL.xhsrate || viewingKOL.xhsRate).toLocaleString()}
+                            </Text>
+                          </HStack>
+                        )}
+                        {parseFloat(viewingKOL.lemon8rate || viewingKOL.lemon8Rate) > 0 && (
+                          <HStack spacing={2} justify="space-between" w="full" bg="rgba(234, 179, 8, 0.1)" p={2} borderRadius="md">
+                            <HStack spacing={2}>
+                              <Text fontSize="sm">🍋</Text>
+                              <Text fontSize="sm" color="yellow.700" fontWeight="600">Lemon8</Text>
+                            </HStack>
+                            <Text fontSize="md" color="yellow.800" fontWeight="800" fontFamily="mono">
+                              RM{parseFloat(viewingKOL.lemon8rate || viewingKOL.lemon8Rate).toLocaleString()}
+                            </Text>
+                          </HStack>
+                        )}
+                        {parseFloat(viewingKOL.sellingprice) > 0 && (
+                          <HStack spacing={2} justify="space-between" w="full" bg="rgba(147, 51, 234, 0.15)" p={2} borderRadius="md" borderWidth="2px" borderColor="purple.300">
+                            <HStack spacing={2}>
+                              <DollarSign size={14} color="#9333ea" />
+                              <Text fontSize="sm" color="purple.700" fontWeight="700">Selling Price</Text>
+                            </HStack>
+                            <Text fontSize="md" color="purple.800" fontWeight="800" fontFamily="mono">
+                              RM{parseFloat(viewingKOL.sellingprice).toLocaleString()}
+                            </Text>
+                          </HStack>
+                        )}
+                        {!viewingKOL.rate && !viewingKOL.instagramrate && !viewingKOL.instagramRate &&
+                          !viewingKOL.tiktokrate && !viewingKOL.tiktokRate && !viewingKOL.facebookrate &&
+                          !viewingKOL.facebookRate && !viewingKOL.twitterrate && !viewingKOL.twitterRate &&
+                          !viewingKOL.threadrate && !viewingKOL.threadRate && !viewingKOL.blograte &&
+                          !viewingKOL.blogRate && (
+                            <Text fontSize="sm" color="gray.500" fontStyle="italic" bg="gray.50" p={3} borderRadius="md">
+                              No platform rates set
+                            </Text>
+                          )}
                       </VStack>
                     </Box>
-                    
-                    <Box 
+
+                    <Box
                       bg="rgba(255, 255, 255, 0.1)"
                       backdropFilter="blur(20px)"
                       p={3}
@@ -1712,7 +1512,7 @@ const SocialMediaKOL = () => {
                       transition="all 0.2s ease"
                     >
                       <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>TIER</Text>
-                      <Badge 
+                      <Badge
                         colorScheme={getTierColor(viewingKOL.tier)}
                         variant="solid"
                         borderRadius="full"
@@ -1724,8 +1524,8 @@ const SocialMediaKOL = () => {
                         {viewingKOL.tier}
                       </Badge>
                     </Box>
-                    
-                    <Box 
+
+                    <Box
                       bg="rgba(255, 255, 255, 0.1)"
                       backdropFilter="blur(20px)"
                       p={3}
@@ -1745,7 +1545,7 @@ const SocialMediaKOL = () => {
 
                   {/* Contact & Location */}
                   <SimpleGrid columns={2} spacing={3}>
-                    <Box 
+                    <Box
                       bg="rgba(255, 255, 255, 0.1)"
                       backdropFilter="blur(20px)"
                       p={3}
@@ -1762,11 +1562,11 @@ const SocialMediaKOL = () => {
                         <Text fontSize="xs" fontWeight="600" color="gray.600">Contact</Text>
                       </Flex>
                       <Text fontSize="sm" fontWeight="600" color="gray.800">
-                        {viewingKOL.contactNumber || 'Not provided'}
+                        {viewingKOL.contact_number || viewingKOL.contactNumber || 'Not provided'}
                       </Text>
                     </Box>
 
-                    <Box 
+                    <Box
                       bg="rgba(255, 255, 255, 0.1)"
                       backdropFilter="blur(20px)"
                       p={3}
@@ -1788,8 +1588,30 @@ const SocialMediaKOL = () => {
                     </Box>
                   </SimpleGrid>
 
+                  {/* Rate Details */}
+                  {(viewingKOL.rate_details || viewingKOL.rateDetails) && (
+                    <Box
+                      bg="rgba(255, 255, 255, 0.1)"
+                      backdropFilter="blur(20px)"
+                      p={4}
+                      borderRadius="xl"
+                      border="1px solid"
+                      borderColor="rgba(255, 255, 255, 0.1)"
+                    >
+                      <Flex align="center" gap={2} mb={2}>
+                        <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
+                          <FileText size={14} color="#dc2626" />
+                        </Box>
+                        <Text fontSize="sm" fontWeight="600" color="gray.700">Rate Details</Text>
+                      </Flex>
+                      <Text fontSize="sm" color="gray.700">
+                        {viewingKOL.rate_details || viewingKOL.rateDetails}
+                      </Text>
+                    </Box>
+                  )}
+
                   {/* Niches */}
-                  <Box 
+                  <Box
                     bg="rgba(255, 255, 255, 0.1)"
                     backdropFilter="blur(20px)"
                     p={4}
@@ -1806,9 +1628,9 @@ const SocialMediaKOL = () => {
                     <HStack spacing={2} flexWrap="wrap">
                       {viewingKOL.niches && viewingKOL.niches.length > 0 ? (
                         viewingKOL.niches.map(niche => (
-                          <Badge 
-                            key={niche} 
-                            colorScheme="red" 
+                          <Badge
+                            key={niche}
+                            colorScheme="red"
                             variant="outline"
                             borderRadius="full"
                             px={2}
@@ -1831,7 +1653,7 @@ const SocialMediaKOL = () => {
                   </Box>
 
                   {/* Additional Info Grid */}
-                  <Box 
+                  <Box
                     bg="rgba(255, 255, 255, 0.1)"
                     backdropFilter="blur(20px)"
                     p={4}
@@ -1855,7 +1677,7 @@ const SocialMediaKOL = () => {
                       <Box>
                         <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Hair</Text>
                         <Text fontSize="sm" fontWeight="600" color="gray.800">
-                          {viewingKOL.hairStyle || 'N/A'}
+                          {viewingKOL.hair_style || viewingKOL.hairStyle || 'N/A'}
                         </Text>
                       </Box>
                       <Box>
@@ -1867,8 +1689,20 @@ const SocialMediaKOL = () => {
                       <Box>
                         <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>PIC</Text>
                         <Text fontSize="sm" fontWeight="600" color="gray.800">
-                          {viewingKOL.picUserName || viewingKOL.pic || 'N/A'}
+                          {viewingKOL.picusername || viewingKOL.picUserName || viewingKOL.pic || 'N/A'}
                         </Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Rating</Text>
+                        <Text fontSize="sm" fontWeight="600" color="yellow.600">
+                          {viewingKOL.rating > 0 ? '⭐'.repeat(viewingKOL.rating) : 'No rating'}
+                        </Text>
+                      </Box>
+                      <Box>
+                        <Text fontSize="xs" fontWeight="600" color="gray.600" mb={1}>Status</Text>
+                        <Badge colorScheme={viewingKOL.is_active ? "green" : "red"} variant="subtle">
+                          {viewingKOL.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
                       </Box>
                     </SimpleGrid>
 
@@ -1879,7 +1713,7 @@ const SocialMediaKOL = () => {
                           <Calendar size={14} color="#666" />
                           <Text fontSize="xs" fontWeight="600" color="gray.600">Added:</Text>
                           <Text fontSize="sm" fontWeight="600" color="gray.800">
-                            {formatDate(viewingKOL.submission_date || viewingKOL.createdAt)}
+                            {formatDate(viewingKOL.submission_date || viewingKOL.created_at || viewingKOL.createdAt)}
                           </Text>
                         </HStack>
                         {viewingKOL.rate_updated_at && (
@@ -1888,6 +1722,15 @@ const SocialMediaKOL = () => {
                             <Text fontSize="xs" fontWeight="600" color="red.600">Rate Updated:</Text>
                             <Text fontSize="sm" fontWeight="600" color="red.700">
                               {formatDate(viewingKOL.rate_updated_at)}
+                            </Text>
+                          </HStack>
+                        )}
+                        {viewingKOL.updated_at && (
+                          <HStack spacing={2}>
+                            <Calendar size={14} color="#666" />
+                            <Text fontSize="xs" fontWeight="600" color="gray.600">Last Updated:</Text>
+                            <Text fontSize="sm" fontWeight="600" color="gray.800">
+                              {formatDate(viewingKOL.updated_at)}
                             </Text>
                           </HStack>
                         )}
@@ -1926,111 +1769,160 @@ const SocialMediaKOL = () => {
                   </Box>
 
                   {/* Social Media Links */}
-                  {(viewingKOL.instagram || viewingKOL.tiktok || viewingKOL.facebook || viewingKOL.twitter || viewingKOL.thread || viewingKOL.blog) && (
-                    <Box 
-                      bg="rgba(255, 255, 255, 0.1)"
-                      backdropFilter="blur(20px)"
-                      p={4}
-                      borderRadius="xl"
-                      border="1px solid"
-                      borderColor="rgba(255, 255, 255, 0.1)"
-                    >
-                      <Flex align="center" gap={2} mb={3}>
-                        <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
-                          <Instagram size={14} color="#dc2626" />
-                        </Box>
-                        <Text fontSize="sm" fontWeight="600" color="gray.700">Social Media</Text>
-                      </Flex>
-                      <SimpleGrid columns={3} spacing={2}>
-                        {viewingKOL.instagram && (
-                          <Button
-                            leftIcon={<Instagram size={12} />}
-                            colorScheme="pink"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => openLink(viewingKOL.instagram)}
-                            _hover={{ bg: 'rgba(236, 72, 153, 0.1)' }}
-                            transition="all 0.2s ease"
-                          >
-                            IG
-                          </Button>
-                        )}
-                        {viewingKOL.tiktok && (
-                          <Button
-                            leftIcon={<span>🎵</span>}
-                            colorScheme="blackAlpha"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => openLink(viewingKOL.tiktok)}
-                            _hover={{ bg: 'rgba(0, 0, 0, 0.1)' }}
-                            transition="all 0.2s ease"
-                          >
-                            TT
-                          </Button>
-                        )}
-                        {viewingKOL.facebook && (
-                          <Button
-                            leftIcon={<Facebook size={12} />}
-                            colorScheme="blue"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => openLink(viewingKOL.facebook)}
-                            _hover={{ bg: 'rgba(59, 130, 246, 0.1)' }}
-                            transition="all 0.2s ease"
-                          >
-                            FB
-                          </Button>
-                        )}
-                        {viewingKOL.twitter && (
-                          <Button
-                            leftIcon={<Twitter size={12} />}
-                            colorScheme="blue"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => openLink(viewingKOL.twitter)}
-                            _hover={{ bg: 'rgba(59, 130, 246, 0.1)' }}
-                            transition="all 0.2s ease"
-                          >
-                            TW
-                          </Button>
-                        )}
-                        {viewingKOL.thread && (
-                          <Button
-                            leftIcon={<span>🧵</span>}
-                            colorScheme="blackAlpha"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => openLink(viewingKOL.thread)}
-                            _hover={{ bg: 'rgba(0, 0, 0, 0.1)' }}
-                            transition="all 0.2s ease"
-                          >
-                            TH
-                          </Button>
-                        )}
-                        {viewingKOL.blog && (
-                          <Button
-                            leftIcon={<FileText size={12} />}
-                            colorScheme="orange"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => openLink(viewingKOL.blog)}
-                            _hover={{ bg: 'rgba(249, 115, 22, 0.1)' }}
-                            transition="all 0.2s ease"
-                          >
-                            Blog
-                          </Button>
-                        )}
-                      </SimpleGrid>
-                    </Box>
-                  )}
+                  {(viewingKOL.instagram || viewingKOL.tiktok || viewingKOL.facebook || viewingKOL.twitter ||
+                    viewingKOL.thread || viewingKOL.blog || viewingKOL.youtube || viewingKOL.xhs || viewingKOL.lemon8) && (
+                      <Box
+                        bg="rgba(255, 255, 255, 0.1)"
+                        backdropFilter="blur(20px)"
+                        p={4}
+                        borderRadius="xl"
+                        border="1px solid"
+                        borderColor="rgba(255, 255, 255, 0.1)"
+                      >
+                        <Flex align="center" gap={2} mb={3}>
+                          <Box p={1} bg="rgba(220, 38, 38, 0.2)" borderRadius="full">
+                            <Instagram size={14} color="#dc2626" />
+                          </Box>
+                          <Text fontSize="sm" fontWeight="600" color="gray.700">Social Media</Text>
+                        </Flex>
+                        <SimpleGrid columns={3} spacing={2}>
+                          {viewingKOL.instagram && (
+                            <Button
+                              leftIcon={<Instagram size={12} />}
+                              colorScheme="pink"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.instagram)}
+                              _hover={{ bg: 'rgba(236, 72, 153, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              IG
+                            </Button>
+                          )}
+                          {viewingKOL.tiktok && (
+                            <Button
+                              leftIcon={<span>🎵</span>}
+                              colorScheme="blackAlpha"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.tiktok)}
+                              _hover={{ bg: 'rgba(0, 0, 0, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              TT
+                            </Button>
+                          )}
+                          {viewingKOL.facebook && (
+                            <Button
+                              leftIcon={<Facebook size={12} />}
+                              colorScheme="blue"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.facebook)}
+                              _hover={{ bg: 'rgba(59, 130, 246, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              FB
+                            </Button>
+                          )}
+                          {viewingKOL.twitter && (
+                            <Button
+                              leftIcon={<Twitter size={12} />}
+                              colorScheme="blue"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.twitter)}
+                              _hover={{ bg: 'rgba(59, 130, 246, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              X
+                            </Button>
+                          )}
+                          {viewingKOL.thread && (
+                            <Button
+                              leftIcon={<span>🧵</span>}
+                              colorScheme="blackAlpha"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.thread)}
+                              _hover={{ bg: 'rgba(0, 0, 0, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              Threads
+                            </Button>
+                          )}
+                          {viewingKOL.blog && (
+                            <Button
+                              leftIcon={<FileText size={12} />}
+                              colorScheme="orange"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.blog)}
+                              _hover={{ bg: 'rgba(249, 115, 22, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              Blog
+                            </Button>
+                          )}
+                          {viewingKOL.youtube && (
+                            <Button
+                              leftIcon={<span>▶️</span>}
+                              colorScheme="red"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.youtube)}
+                              _hover={{ bg: 'rgba(220, 38, 38, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              YouTube
+                            </Button>
+                          )}
+                          {viewingKOL.xhs && (
+                            <Button
+                              leftIcon={<span>📕</span>}
+                              colorScheme="red"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.xhs)}
+                              _hover={{ bg: 'rgba(220, 38, 38, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              XHS
+                            </Button>
+                          )}
+                          {viewingKOL.lemon8 && (
+                            <Button
+                              leftIcon={<span>🍋</span>}
+                              colorScheme="yellow"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => openLink(viewingKOL.lemon8)}
+                              _hover={{ bg: 'rgba(234, 179, 8, 0.1)' }}
+                              transition="all 0.2s ease"
+                            >
+                              Lemon8
+                            </Button>
+                          )}
+                        </SimpleGrid>
+                      </Box>
+                    )}
+
                 </VStack>
               )}
             </ModalBody>
           </ModalContent>
         </Modal>
       </Container>
+
+      {/* Proposal Modal */}
+      <ProposalModal
+        isOpen={isProposalOpen}
+        onClose={onProposalClose}
+        selectedKols={Array.from(selectedKOLs)}
+        onGenerate={handleGeneratePDF}
+      />
     </Box>
   );
 };
 
-export default SocialMediaKOL;
+export default memo(SocialMediaKOL);
