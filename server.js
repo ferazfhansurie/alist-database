@@ -515,7 +515,7 @@ app.post('/api/kols', async (req, res) => {
         rating, selling_price,
         tier, gender, hair_style, race, address, contact_number,
         rate_details, rate_updated_at, pic_user_id, pic, kol_type, notes, custom_fields
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
       RETURNING *
     `, [
       kolData.youtube || null, kolData.lemon8 || null, kolData.xhs || null,
