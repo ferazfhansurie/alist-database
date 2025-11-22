@@ -9,15 +9,12 @@ export const KOL_TYPES = {
 
 export const TIERS = [
   'Celebrity',
-  'Tier 1 (Premium)',
-  'Tier 2 (Mid-tier)',
-  'Tier 3 (Emerging)',
-  'Tier 4 (Micro)',
   'NANO',
   'MICRO',
   'MACRO',
   'MEGA',
-  'MID-TIER'
+  'MID-TIER',
+  'Affiliate'
 ];
 
 export const GENDERS = [
@@ -66,7 +63,8 @@ export const TALENT_NICHES = [
   'Stylist',
   'Studio',
   'Hairdo',
-  'Fashion Designer'
+  'Fashion Designer',
+  'MC/Host'
 ];
 
 export const HAIR_STYLES = [

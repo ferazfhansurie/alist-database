@@ -29,7 +29,13 @@ import {
   InputGroup,
   InputLeftElement,
   SimpleGrid,
-  useColorModeValue
+  useColorModeValue,
+  Checkbox,
+  Tooltip,
+  Spinner,
+  Center,
+  Wrap,
+  WrapItem
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { 
@@ -67,9 +73,11 @@ const BloggerKOL = () => {
   const [selectedRace, setSelectedRace] = useState('All Races');
   const [selectedHijab, setSelectedHijab] = useState('All');
   const [selectedPic, setSelectedPic] = useState('All PICs');
+  const [selectedRating, setSelectedRating] = useState('All Ratings');
   const [editingKOL, setEditingKOL] = useState(null);
   const [viewingKOL, setViewingKOL] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedKOLs, setSelectedKOLs] = useState(new Set());
   
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
@@ -112,7 +120,7 @@ const BloggerKOL = () => {
 
   useEffect(() => {
     filterData();
-  }, [searchTerm, selectedTier, selectedNiche, selectedState, selectedGender, selectedRace, selectedHijab, selectedPic, kolData]);
+  }, [searchTerm, selectedTier, selectedNiche, selectedState, selectedGender, selectedRace, selectedHijab, selectedPic, selectedRating, kolData]);
 
   const filterData = () => {
     let filtered = kolData;
@@ -164,6 +172,11 @@ const BloggerKOL = () => {
 
     if (selectedPic !== 'All PICs') {
       filtered = filtered.filter(kol => kol.pic === selectedPic);
+    }
+
+    if (selectedRating !== 'All Ratings') {
+      const ratingValue = parseInt(selectedRating);
+      filtered = filtered.filter(kol => (kol.rating || 0) === ratingValue);
     }
 
     setFilteredData(filtered);
@@ -263,6 +276,69 @@ const BloggerKOL = () => {
     return 'gray';
   };
 
+  // Bulk selection handlers
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      const allIds = new Set(filteredData.map(kol => kol.id));
+      setSelectedKOLs(allIds);
+    } else {
+      setSelectedKOLs(new Set());
+    }
+  };
+
+  const handleSelectKOL = (kolId, checked) => {
+    const newSelected = new Set(selectedKOLs);
+    if (checked) {
+      newSelected.add(kolId);
+    } else {
+      newSelected.delete(kolId);
+    }
+    setSelectedKOLs(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedKOLs.size === 0) return;
+    
+    if (window.confirm(`Are you sure you want to delete ${selectedKOLs.size} KOL record(s)?`)) {
+      try {
+        for (const kolId of selectedKOLs) {
+          await deleteKOL(kolId);
+        }
+        
+        const bloggerKOLs = await loadKOLsByType(KOL_TYPES.BLOGGER);
+        setKolData(bloggerKOLs);
+        setFilteredData(bloggerKOLs);
+        setSelectedKOLs(new Set());
+        
+        toast({
+          title: 'Success!',
+          description: `${selectedKOLs.size} KOL record(s) deleted successfully`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error!',
+          description: 'Failed to delete some KOL records',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    }
+  };
+
+  const handleGenerateProposal = () => {
+    toast({
+      title: 'Coming Soon',
+      description: 'Proposal generation feature will be available soon',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
   return (
     <Box
       minH="100vh"
@@ -307,6 +383,35 @@ const BloggerKOL = () => {
           transition={{ duration: 0.6 }}
         >
           <VStack spacing={{ base: 2, md: 3 }} align="stretch">
+            
+            {/* Header */}
+            <Flex justify="space-between" align="center" mb={2}>
+              <HStack spacing={3}>
+                <Text fontSize="2xl" fontWeight="bold" color="gray.800">
+                  Blogger KOLs
+                </Text>
+                <Badge colorScheme="orange" fontSize="md" px={3} py={1} borderRadius="full">
+                  {filteredData.length}
+                </Badge>
+              </HStack>
+
+              {canEdit() && (
+                <Button
+                  leftIcon={<FileText size={18} />}
+                  colorScheme="red"
+                  onClick={() => {
+                    setEditingKOL(null);
+                    onFormOpen();
+                  }}
+                  size="md"
+                  boxShadow="md"
+                  _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                  transition="all 0.2s"
+                >
+                  Add Blogger KOL
+                </Button>
+              )}
+            </Flex>
         
             {/* Search and Filters - Compact */}
             <Box 
@@ -599,378 +704,256 @@ const BloggerKOL = () => {
               </Flex>
             </Box>
 
-            {/* Data Table - Main Focus */}
+            {/* Bulk Actions and Pagination */}
+            <Flex justify="space-between" align="center" px={2}>
+              <HStack spacing={2}>
+                {selectedKOLs.size > 0 && (
+                  <>
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      leftIcon={<Trash2 size={14} />}
+                      onClick={handleBulkDelete}
+                      variant="solid"
+                      fontSize="xs"
+                    >
+                      Bulk Delete ({selectedKOLs.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      colorScheme="blue"
+                      leftIcon={<FileText size={14} />}
+                      onClick={handleGenerateProposal}
+                      variant="outline"
+                      fontSize="xs"
+                    >
+                      Generate Proposal ({selectedKOLs.size})
+                    </Button>
+                  </>
+                )}
+              </HStack>
+              
+              <Text fontSize="xs" color="gray.600">
+                Page 1 of 1 ({filteredData.length} total results)
+              </Text>
+            </Flex>
+
+            {/* Data Table - Compact */}
             <Box 
-              overflowX="auto" 
               bg="white"
               borderRadius="xl"
               boxShadow="0 4px 20px rgba(0, 0, 0, 0.1)"
               border="1px solid"
               borderColor="gray.100"
+              overflow="hidden"
             >
-              <Table variant="simple" size="lg">
-                <Thead position="sticky" top={0} bg="rgba(220, 38, 38, 0.15)" zIndex={1} borderBottom="2px solid" borderColor="rgba(220, 38, 38, 0.3)">
-                  <Tr>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="200px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Name
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="150px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Blog URL
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="120px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Rate (RM)
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="100px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Tier
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="130px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Niches
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="100px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Location
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="130px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Contact
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="90px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      PIC
-                    </Th>
-                    <Th 
-                      px={6} 
-                      py={5} 
-                      fontSize="sm" 
-                      fontWeight="bold" 
-                      color="red.700"
-                      minW="130px"
-                      textTransform="uppercase"
-                      letterSpacing="wide"
-                    >
-                      Actions
-                    </Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {filteredData.map((kol) => (
-                    <Tr 
-                      key={kol.id}
-                      _hover={{ bg: 'rgba(254, 226, 226, 0.4)', transform: 'scale(1.01)' }}
-                      fontSize="sm"
-                      borderBottom="1px solid"
-                      borderColor="rgba(220, 38, 38, 0.15)"
-                      height="100px"
-                      transition="all 0.2s ease"
-                    >
-                      <Td px={6} py={5}>
-                        <VStack align="start" spacing={2} maxH="80px" overflow="hidden">
-                          <Text fontWeight="700" color="gray.800" fontSize="md" noOfLines={1}>
-                            {kol.name}
-                          </Text>
-                          <Text fontSize="sm" color="gray.500" noOfLines={1}>
-                            {kol.gender} • {kol.race}
-                          </Text>
-                        </VStack>
-                      </Td>
-                      <Td px={6} py={5}>
-                        {kol.blog && (
-                          <HStack 
-                            spacing={2} 
-                            maxH="80px" 
-                            overflow="hidden"
-                            bg="rgba(255, 255, 255, 0.8)"
-                            p={2}
-                            borderRadius="lg"
-                            cursor="pointer"
-                            onClick={() => openLink(kol.blog)}
-                            _hover={{
-                              bg: 'rgba(255, 107, 53, 0.1)',
-                              transform: 'translateY(-1px)'
-                            }}
-                            transition="all 0.2s ease"
-                            boxShadow="0 2px 8px rgba(0,0,0,0.1)"
-                          >
-                            <FileText size={16} color="#FF6B35" />
-                            <Text
-                              fontSize="sm"
-                              color="blue.500"
-                              fontWeight="600"
-                              noOfLines={1}
-                            >
-                              Visit Blog
-                            </Text>
-                            <ExternalLink size={12} color="#666" />
-                          </HStack>
-                        )}
-                      </Td>
-                      <Td px={6} py={5} minW="250px">
-                        <VStack align="start" spacing={2}>
-                          <Text fontWeight="800" color="red.600" fontSize="md" mb={1}>
-                            Overall: RM {kol.rate?.toLocaleString() || '0'}
-                          </Text>
-                          <VStack spacing={1} align="start" w="full">
-                            {parseFloat(kol.instagramRate) > 0 && (
-                              <HStack spacing={2} justify="space-between" w="full">
-                                <HStack spacing={1}>
-                                  <Text fontSize="xs" color="pink.600" fontWeight="600">📸 IG:</Text>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.instagramRate).toLocaleString()}</Text>
-                              </HStack>
-                            )}
-                            {parseFloat(kol.tiktokRate) > 0 && (
-                              <HStack spacing={2} justify="space-between" w="full">
-                                <HStack spacing={1}>
-                                  <Text fontSize="xs" color="gray.600" fontWeight="600">🎵 TT:</Text>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.tiktokRate).toLocaleString()}</Text>
-                              </HStack>
-                            )}
-                            {parseFloat(kol.facebookRate) > 0 && (
-                              <HStack spacing={2} justify="space-between" w="full">
-                                <HStack spacing={1}>
-                                  <Text fontSize="xs" color="blue.600" fontWeight="600">📘 FB:</Text>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.facebookRate).toLocaleString()}</Text>
-                              </HStack>
-                            )}
-                            {parseFloat(kol.twitterRate) > 0 && (
-                              <HStack spacing={2} justify="space-between" w="full">
-                                <HStack spacing={1}>
-                                  <Text fontSize="xs" color="blue.500" fontWeight="600">🐦 TW:</Text>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.twitterRate).toLocaleString()}</Text>
-                              </HStack>
-                            )}
-                            {parseFloat(kol.threadRate) > 0 && (
-                              <HStack spacing={2} justify="space-between" w="full">
-                                <HStack spacing={1}>
-                                  <Text fontSize="xs" color="purple.600" fontWeight="600">🧵 TH:</Text>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.threadRate).toLocaleString()}</Text>
-                              </HStack>
-                            )}
-                            {parseFloat(kol.blogRate) > 0 && (
-                              <HStack spacing={2} justify="space-between" w="full">
-                                <HStack spacing={1}>
-                                  <Text fontSize="xs" color="orange.600" fontWeight="600">📝 Blog:</Text>
-                                </HStack>
-                                <Text fontSize="xs" color="gray.700" fontWeight="700">RM{parseFloat(kol.blogRate).toLocaleString()}</Text>
-                              </HStack>
-                            )}
-                            {(parseFloat(kol.instagramRate) === 0 && parseFloat(kol.tiktokRate) === 0 && parseFloat(kol.facebookRate) === 0 && parseFloat(kol.twitterRate) === 0 && parseFloat(kol.threadRate) === 0 && parseFloat(kol.blogRate) === 0) && (
-                              <Text fontSize="xs" color="gray.400" fontStyle="italic">
-                                No platform rates set
-                              </Text>
-                            )}
-                          </VStack>
-                          {kol.rateDetails && (
-                            <Text fontSize="xs" color="gray.500" mt={1} wordBreak="break-word" whiteSpace="pre-wrap">
-                              {kol.rateDetails}
-                            </Text>
-                          )}
-                        </VStack>
-                      </Td>
-                      <Td px={6} py={5}>
-                        <Badge 
-                          colorScheme={getTierColor(kol.tier)} 
-                          variant="subtle"
-                          borderRadius="full"
-                          px={3}
-                          py={2}
-                          fontWeight="700"
-                          fontSize="sm"
-                          noOfLines={1}
-                        >
-                          {kol.tier}
-                        </Badge>
-                      </Td>
-                      <Td px={6} py={5}>
-                        <VStack align="start" spacing={2} maxH="80px" overflow="hidden">
-                          {kol.niches.slice(0, 2).map(niche => (
-                            <Badge 
-                              key={niche} 
-                              colorScheme="red" 
-                              variant="outline" 
-                              size="sm"
-                              borderRadius="full"
-                              fontWeight="700"
-                              borderWidth="2px"
-                              fontSize="sm"
-                              px={3}
-                              py={1}
-                              noOfLines={1}
-                            >
-                              {niche}
-                            </Badge>
-                          ))}
-                          {kol.niches.length > 2 && (
-                            <Text fontSize="sm" color="gray.500" fontWeight="600">
-                              +{kol.niches.length - 2} more
-                            </Text>
-                          )}
-                        </VStack>
-                      </Td>
-                      <Td px={6} py={5}>
-                        <Text fontSize="sm" fontWeight="600" noOfLines={1} color="gray.700">
-                          {kol.address}
-                        </Text>
-                      </Td>
-                      <Td px={6} py={5}>
-                        <Text 
-                          fontSize="sm" 
-                          fontFamily="mono" 
-                          fontWeight="700"
-                          color="gray.800"
-                          noOfLines={1}
-                          bg="gray.50"
-                          px={2}
-                          py={1}
-                          borderRadius="md"
-                        >
-                          {kol.contactNumber}
-                        </Text>
-                      </Td>
-                      <Td px={6} py={5}>
-                        <Badge 
-                          colorScheme="green" 
-                          variant="subtle"
-                          borderRadius="full"
-                          px={3}
-                          py={2}
-                          fontWeight="700"
-                          fontSize="sm"
-                          noOfLines={1}
-                        >
-                          {kol.picUserName || kol.pic}
-                        </Badge>
-                      </Td>
-                      <Td px={6} py={5}>
-                        <HStack spacing={2}>
-                          <IconButton
-                            size="sm"
-                            icon={<Eye size={16} />}
-                            onClick={() => handleView(kol)}
-                            colorScheme="blue"
-                            variant="outline"
-                            aria-label="View KOL"
-                            borderRadius="lg"
-                            _hover={{
-                              bg: 'blue.50',
-                              transform: 'scale(1.1)',
-                              borderColor: 'blue.400'
-                            }}
-                            transition="all 0.2s ease"
+              <Box 
+                overflowX="auto" 
+                overflowY="auto"
+                height="calc(100vh - 420px)"
+                position="relative"
+              >
+                <Table variant="simple" size="sm">
+                  <Thead position="sticky" top={0} bg="rgba(220, 38, 38, 0.15)" zIndex={2} borderBottom="2px solid" borderColor="rgba(220, 38, 38, 0.3)">
+                    <Tr>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" w="40px">
+                        <Tooltip label="Select All" fontSize="xs">
+                          <Checkbox
+                            isChecked={selectedKOLs.size === filteredData.length && filteredData.length > 0}
+                            isIndeterminate={selectedKOLs.size > 0 && selectedKOLs.size < filteredData.length}
+                            onChange={(e) => handleSelectAll(e.target.checked)}
+                            colorScheme="red"
                           />
-                          {canEdit() && (
-                            <IconButton
-                              size="sm"
-                              icon={<Edit size={16} />}
-                              onClick={() => handleEdit(kol)}
-                              colorScheme="green"
-                              variant="outline"
-                              aria-label="Edit KOL"
-                              borderRadius="lg"
-                              _hover={{
-                                bg: 'green.50',
-                                transform: 'scale(1.1)',
-                                borderColor: 'green.400'
-                              }}
-                              transition="all 0.2s ease"
-                            />
-                          )}
-                          {canDelete() && (
-                            <IconButton
-                              size="sm"
-                              icon={<Trash2 size={16} />}
-                              onClick={() => handleDelete(kol.id)}
-                              colorScheme="red"
-                              variant="outline"
-                              aria-label="Delete KOL"
-                              borderRadius="lg"
-                              _hover={{
-                                bg: 'red.50',
-                                transform: 'scale(1.1)',
-                                borderColor: 'red.400'
-                              }}
-                              transition="all 0.2s ease"
-                            />
-                          )}
-                        </HStack>
-                      </Td>
+                        </Tooltip>
+                      </Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="180px">Name</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="140px">Blog URL</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="200px">Rates (RM)</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="90px">Tier</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="70px">Rating</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="130px">Niches</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="100px">Location</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="120px">Contact</Th>
+                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="80px">PIC</Th>
+                      <Th 
+                        px={3} 
+                        py={3} 
+                        fontSize="xs" 
+                        fontWeight="bold" 
+                        color="red.700" 
+                        w="120px"
+                        position="sticky"
+                        right={0}
+                        bg="rgba(220, 38, 38, 0.15)"
+                        boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
+                        zIndex={3}
+                      >
+                        Actions
+                      </Th>
                     </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+                  </Thead>
+                  <Tbody>
+                    {filteredData.length === 0 ? (
+                      <Tr>
+                        <Td colSpan={11} textAlign="center" py={10}>
+                          <Center>
+                            <VStack spacing={2}>
+                              <Spinner color="red.500" />
+                              <Text color="gray.500" fontSize="sm">No KOLs found</Text>
+                            </VStack>
+                          </Center>
+                        </Td>
+                      </Tr>
+                    ) : (
+                      filteredData.map((kol) => {
+                        const isSelected = selectedKOLs.has(kol.id);
+                        return (
+                          <Tr 
+                            key={kol.id}
+                            bg={isSelected ? 'red.50' : 'white'}
+                            _hover={{ bg: isSelected ? 'red.100' : 'rgba(254, 226, 226, 0.4)' }}
+                            fontSize="xs"
+                            borderBottom="1px solid"
+                            borderColor="rgba(220, 38, 38, 0.15)"
+                            transition="all 0.15s ease"
+                          >
+                            <Td px={3} py={3}>
+                              <Checkbox
+                                isChecked={isSelected}
+                                onChange={(e) => handleSelectKOL(kol.id, e.target.checked)}
+                                colorScheme="red"
+                              />
+                            </Td>
+                            <Td px={3} py={3}>
+                              <VStack align="start" spacing={1}>
+                                <Text fontWeight="600" color="gray.800" fontSize="xs" noOfLines={1}>
+                                  {kol.name}
+                                </Text>
+                                <Text fontSize="2xs" color="gray.500" noOfLines={1}>
+                                  {kol.gender} • {kol.race}
+                                </Text>
+                              </VStack>
+                            </Td>
+                            <Td px={3} py={3}>
+                              {kol.blog && (
+                                <HStack 
+                                  spacing={1} 
+                                  cursor="pointer"
+                                  onClick={() => openLink(kol.blog)}
+                                  _hover={{ color: 'blue.600' }}
+                                >
+                                  <FileText size={12} color="#FF6B35" />
+                                  <Text fontSize="2xs" color="blue.500" fontWeight="500" noOfLines={1}>
+                                    Visit
+                                  </Text>
+                                  <ExternalLink size={10} color="#666" />
+                                </HStack>
+                              )}
+                            </Td>
+                            <Td px={3} py={3}>
+                              <VStack align="start" spacing={0.5}>
+                                <Text fontWeight="700" color="red.600" fontSize="xs">
+                                  Overall: {kol.rate?.toLocaleString() || '0'}
+                                </Text>
+                                {parseFloat(kol.instagramRate || kol.instagram_rate) > 0 && (
+                                  <Text fontSize="2xs" color="gray.600">
+                                    📸 {parseFloat(kol.instagramRate || kol.instagram_rate).toLocaleString()}
+                                  </Text>
+                                )}
+                                {parseFloat(kol.tiktokRate || kol.tiktok_rate) > 0 && (
+                                  <Text fontSize="2xs" color="gray.600">
+                                    🎵 {parseFloat(kol.tiktokRate || kol.tiktok_rate).toLocaleString()}
+                                  </Text>
+                                )}
+                                {parseFloat(kol.blogRate || kol.blog_rate) > 0 && (
+                                  <Text fontSize="2xs" color="gray.600">
+                                    📝 {parseFloat(kol.blogRate || kol.blog_rate).toLocaleString()}
+                                  </Text>
+                                )}
+                              </VStack>
+                            </Td>
+                            <Td px={3} py={3}>
+                              <Badge 
+                                colorScheme={getTierColor(kol.tier)}
+                                fontSize="2xs"
+                                borderRadius="md"
+                                px={2}
+                                py={0.5}
+                              >
+                                {kol.tier}
+                              </Badge>
+                            </Td>
+                            <Td px={3} py={3}>
+                              <HStack spacing={1}>
+                                <Text fontSize="xs" fontWeight="600" color="yellow.500">★</Text>
+                                <Text fontSize="xs" fontWeight="600">{kol.rating || 'N/A'}</Text>
+                              </HStack>
+                            </Td>
+                            <Td px={3} py={3}>
+                              <Wrap spacing={1}>
+                                {(kol.niches || kol.niche)?.split(',').slice(0, 2).map((niche, idx) => (
+                                  <WrapItem key={idx}>
+                                    <Badge fontSize="2xs" colorScheme="purple" borderRadius="md" px={1.5}>
+                                      {niche.trim()}
+                                    </Badge>
+                                  </WrapItem>
+                                ))}
+                                {(kol.niches || kol.niche)?.split(',').length > 2 && (
+                                  <WrapItem>
+                                    <Text fontSize="2xs" color="gray.500">+{(kol.niches || kol.niche).split(',').length - 2}</Text>
+                                  </WrapItem>
+                                )}
+                              </Wrap>
+                            </Td>
+                            <Td px={3} py={3}>
+                              <Text fontSize="xs" noOfLines={1}>{kol.state || kol.location}</Text>
+                            </Td>
+                            <Td px={3} py={3}>
+                              <VStack align="start" spacing={0.5}>
+                                <Text fontSize="2xs" fontWeight="500" noOfLines={1}>{kol.contact_number || kol.contactNumber}</Text>
+                                <Text fontSize="2xs" color="blue.500" noOfLines={1}>{kol.email}</Text>
+                              </VStack>
+                            </Td>
+                            <Td px={3} py={3}>
+                              <Text fontSize="xs" fontWeight="500">{kol.pic}</Text>
+                            </Td>
+                            <Td 
+                              px={3} 
+                              py={3}
+                              position="sticky"
+                              right={0}
+                              bg={isSelected ? 'red.50' : 'white'}
+                              boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
+                              _hover={{ bg: isSelected ? 'red.100' : 'rgba(254, 226, 226, 0.4)' }}
+                            >
+                              <HStack spacing={1}>
+                                <IconButton
+                                  size="xs"
+                                  icon={<Edit2 size={12} />}
+                                  onClick={() => handleEdit(kol)}
+                                  colorScheme="blue"
+                                  variant="ghost"
+                                  aria-label="Edit KOL"
+                                />
+                                {canDelete() && (
+                                  <IconButton
+                                    size="xs"
+                                    icon={<Trash2 size={12} />}
+                                    onClick={() => handleDelete(kol.id)}
+                                    colorScheme="red"
+                                    variant="ghost"
+                                    aria-label="Delete KOL"
+                                  />
+                                )}
+                              </HStack>
+                            </Td>
+                          </Tr>
+                        );
+                      })
+                    )}
+                  </Tbody>
+                </Table>
+              </Box>
             </Box>
           </VStack>
         </MotionBox>
