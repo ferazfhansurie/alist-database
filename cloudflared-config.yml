@@ -4,7 +4,7 @@ credentials-file: /home/firaz/.cloudflared/c804d88d-7926-4495-93fc-8c4be9da1531.
 # Ingress rules for AList Database
 ingress:
   - hostname: alist.jutateknologi.com
-    service: http://localhost:3001
+    service: https://alist.jutateknologi.com
     originRequest:
       noTLSVerify: true
       connectTimeout: 30s

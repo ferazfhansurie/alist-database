@@ -121,7 +121,7 @@ const Settings = () => {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch('http://localhost:3001/api/users');
+      const response = await fetch('https://alist.jutateknologi.com/api/users');
       
       if (!response.ok) {
         throw new Error('Failed to fetch users');
@@ -296,7 +296,7 @@ const Settings = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/users', {
+      const response = await fetch('https://alist.jutateknologi.com/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -337,7 +337,7 @@ const Settings = () => {
     if (!userToDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${userToDelete.id}`, {
+      const response = await fetch(`https://alist.jutateknologi.com/api/users/${userToDelete.id}`, {
         method: 'DELETE',
       });
 
@@ -507,7 +507,7 @@ const Settings = () => {
             };
 
             // Send to API
-            const response = await fetch('http://localhost:3001/api/kols', {
+            const response = await fetch('https://alist.jutateknologi.com/api/kols', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

@@ -102,7 +102,7 @@ export const DatabaseProvider = ({ children }) => {
   const loadKOLs = useCallback(async () => {
     try {
       console.log('🌐 API CALL - loadKOLs');
-      const response = await fetch('http://localhost:3001/api/kols');
+      const response = await fetch('https://alist.jutateknologi.com/api/kols');
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs');
       }
@@ -123,7 +123,7 @@ export const DatabaseProvider = ({ children }) => {
   const loadKOLsByType = useCallback(async (kolType) => {
     try {
     
-      const response = await fetch(`http://localhost:3001/api/kols/type/${kolType}`);
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/type/${kolType}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOLs by type');
       }
@@ -141,7 +141,7 @@ export const DatabaseProvider = ({ children }) => {
   // Load statistics
   const loadStats = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/kols/stats');
+      const response = await fetch('https://alist.jutateknologi.com/api/kols/stats');
       if (!response.ok) {
         throw new Error('Failed to fetch stats');
       }
@@ -164,7 +164,7 @@ export const DatabaseProvider = ({ children }) => {
   // Create new KOL
   const createKOL = async (kolData) => {
     try {
-      const response = await fetch('http://localhost:3001/api/kols', {
+      const response = await fetch('https://alist.jutateknologi.com/api/kols', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +191,7 @@ export const DatabaseProvider = ({ children }) => {
   // Update KOL
   const updateKOL = async (id, kolData) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/kols/${id}`, {
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ export const DatabaseProvider = ({ children }) => {
   // Delete KOL
   const deleteKOL = async (id) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/kols/${id}`, {
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`, {
         method: 'DELETE',
       });
       
@@ -239,7 +239,7 @@ export const DatabaseProvider = ({ children }) => {
   const getKOLById = useCallback(async (id) => {
     try {
       console.log('🌐 API CALL - getKOLById:', id);
-      const response = await fetch(`http://localhost:3001/api/kols/${id}`);
+      const response = await fetch(`https://alist.jutateknologi.com/api/kols/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch KOL');
       }
@@ -274,7 +274,7 @@ export const DatabaseProvider = ({ children }) => {
   // Get all niches
   const getNiches = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/niches');
+      const response = await fetch('https://alist.jutateknologi.com/api/niches');
       if (!response.ok) {
         throw new Error('Failed to fetch niches');
       }

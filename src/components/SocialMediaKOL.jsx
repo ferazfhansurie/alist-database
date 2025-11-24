@@ -903,7 +903,7 @@ const SocialMediaKOL = () => {
     try {
       const kolIds = Array.from(selectedKOLs);
 
-      const response = await fetch('http://localhost:3001/api/proposals/generate', {
+      const response = await fetch('https://alist.jutateknologi.com/api/proposals/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
