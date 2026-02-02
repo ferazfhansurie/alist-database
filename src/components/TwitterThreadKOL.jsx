@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -58,7 +59,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const MotionBox = motion(Box);
 
-// Memoized table row component to prevent unnecessary re-renders
+// Memoized table row component for performance (standardized)
 const KOLTableRow = memo(({
   kol,
   onEdit,
@@ -72,364 +73,402 @@ const KOLTableRow = memo(({
   isSelected,
   onSelect
 }) => {
-  // Memoize expensive calculations
-  const generalRate = useMemo(() => parseFloat(kol.rate) || 0, [kol.rate]);
-  const twitterRate = useMemo(() => parseFloat(kol.twitterRate) || 0, [kol.twitterRate]);
-  const threadRate = useMemo(() => parseFloat(kol.threadRate) || 0, [kol.threadRate]);
-  
-  // Show rate for filled platforms only
-  const filledPlatforms = useMemo(() => {
-    const platforms = [];
-    if (kol.twitter) platforms.push({ name: 'Twitter', rate: twitterRate || generalRate, icon: 'twitter', color: 'blue' });
-    if (kol.thread) platforms.push({ name: 'Thread', rate: threadRate || generalRate, icon: 'thread', color: 'purple' });
-    return platforms;
-  }, [kol.twitter, kol.thread, twitterRate, threadRate, generalRate]);
-  
-  const hasAnyRates = useMemo(() => 
-    generalRate > 0 || twitterRate > 0 || threadRate > 0, 
-    [generalRate, twitterRate, threadRate]
-  );
-
   return (
-  <Tr 
-    _hover={{ bg: 'gray.50' }}
-    bg={isSelected ? 'blue.50' : 'white'}
-    borderBottom="1px solid"
-    borderColor="gray.200"
-    transition="all 0.15s ease"
-  >
-    {/* Checkbox */}
-    <Td px={3} py={3} w="40px">
-      <Checkbox
-        isChecked={isSelected}
-        onChange={(e) => onSelect(kol.id, e.target.checked)}
-        colorScheme="blue"
-        size="lg"
-      />
-    </Td>
+    <Tr
+      _hover={{ bg: 'gray.50' }}
+      bg={isSelected ? 'blue.50' : 'white'}
+      borderBottom="1px solid"
+      borderColor="gray.200"
+      transition="all 0.15s ease"
+    >
+      {/* Checkbox */}
+      <Td px={3} py={3} w="40px">
+        <Checkbox
+          isChecked={isSelected}
+          onChange={(e) => onSelect(kol.id, e.target.checked)}
+          colorScheme="blue"
+          size="lg"
+        />
+      </Td>
 
-    {/* KOL Details */}
-    <Td px={3} py={3} minW="150px">
-      <VStack align="start" spacing={2}>
-        <Text fontWeight="700" color="gray.800" fontSize="md" wordBreak="break-word">
-          {kol.name || 'No Name'}
-        </Text>
-        {kol.notes && (
-          <Text fontSize="xs" color="gray.500" fontStyle="italic" wordBreak="break-word">
-            {kol.notes}
+      {/* Name */}
+      <Td px={3} py={3} minW="150px" maxW="200px">
+        <VStack align="start" spacing={1}>
+          <Text fontWeight="600" color="gray.900" fontSize="sm" noOfLines={1}>
+            {kol.name || 'No Name'}
           </Text>
-        )}
-      </VStack>
-    </Td>
-
-    {/* Platform Links */}
-    <Td px={6} py={5}>
-      <HStack spacing={2} flexWrap="wrap" justify="center">
-        {kol.twitter && (
-          <HStack 
-            bg="rgba(255, 255, 255, 0.8)"
-            backdropFilter="blur(10px)"
-            p={2}
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.3)"
-            cursor="pointer"
-            onClick={() => onOpenLink(kol.twitter)}
-            _hover={{
-              bg: 'rgba(29, 161, 242, 0.1)',
-              transform: 'translateY(-1px)'
-            }}
-            transition="all 0.2s ease"
-            boxShadow="0 2px 8px rgba(0,0,0,0.1)"
-          >
-            <Twitter size={14} color="#1DA1F2" />
-            <Text fontSize="xs" color="blue.600" fontWeight="600">TW</Text>
-          </HStack>
-        )}
-        {kol.thread && (
-          <HStack 
-            bg="rgba(255, 255, 255, 0.8)"
-            backdropFilter="blur(10px)"
-            p={2}
-            borderRadius="lg"
-            border="1px solid"
-            borderColor="rgba(255, 255, 255, 0.3)"
-            cursor="pointer"
-            onClick={() => onOpenLink(kol.thread)}
-            _hover={{
-              bg: 'rgba(147, 51, 234, 0.1)',
-              transform: 'translateY(-1px)'
-            }}
-            transition="all 0.2s ease"
-            boxShadow="0 2px 8px rgba(0,0,0,0.1)"
-          >
-            <Text fontSize="xs" color="purple.600" fontWeight="600">🧵</Text>
-            <Text fontSize="xs" color="blue.600" fontWeight="600">TH</Text>
-          </HStack>
-        )}
-      </HStack>
-    </Td>
-
-    {/* Rate */}
-    <Td px={6} py={5} minW="280px">
-      <VStack align="start" spacing={3}>
-        <VStack spacing={2} align="start" w="full">
-          {filledPlatforms.map((platform) => (
-            <Box 
-              key={platform.name}
-              bg={platform.color === 'blue' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(147, 51, 234, 0.1)'}
-              p={3} 
-              borderRadius="lg" 
-              border="1px solid" 
-              borderColor={platform.color === 'blue' ? 'blue.200' : 'purple.200'}
-              w="full"
-              _hover={{ transform: 'translateY(-1px)' }}
-              transition="all 0.2s ease"
-            >
-              <HStack spacing={3} justify="space-between" w="full">
-                <HStack spacing={2}>
-                  <Box p={1} bg={`${platform.color}.100`} borderRadius="md">
-                    {platform.icon === 'twitter' && <Twitter size={16} color="#1DA1F2" />}
-                    {platform.icon === 'thread' && <Text fontSize="sm">🧵</Text>}
-                  </Box>
-                  <Text fontSize="sm" color={`${platform.color}.700`} fontWeight="700">{platform.name}</Text>
-                </HStack>
-                <Text fontSize="lg" color={`${platform.color}.800`} fontWeight="800" fontFamily="mono">
-                  RM{platform.rate.toLocaleString()}
-                </Text>
-              </HStack>
-            </Box>
-          ))}
-          {filledPlatforms.length === 0 && generalRate === 0 && (
-            <Box 
-              bg="gray.50" 
-              p={3} 
-              borderRadius="lg" 
-              border="1px dashed" 
-              borderColor="gray.300"
-              w="full"
-            >
-              <Text fontSize="xs" color="gray.400" fontStyle="italic" textAlign="center">
-                No rates set
-              </Text>
-            </Box>
+          {kol.notes && (
+            <Text fontSize="xs" color="blue.600" noOfLines={1} fontWeight="500">
+              {kol.notes}
+            </Text>
           )}
         </VStack>
-      </VStack>
-    </Td>
+      </Td>
 
-    {/* Tier */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme={getTierColor(kol.tier)} 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.tier}
-      </Badge>
-    </Td>
-
-    {/* Rating */}
-    <Td px={6} py={5}>
-      <HStack spacing={1}>
-        <Text fontSize="lg" fontWeight="800" color="yellow.500">
-          {'⭐'.repeat(kol.rating || 0)}
+      {/* Contact */}
+      <Td px={3} py={3} minW="120px">
+        <Text fontSize="xs" fontFamily="mono" color="gray.700" noOfLines={1}>
+          {kol.contact_number || kol.contactNumber || 'N/A'}
         </Text>
-        {(!kol.rating || kol.rating === 0) && (
-          <Text fontSize="sm" color="gray.400" fontStyle="italic">
-            No rating
-          </Text>
-        )}
-      </HStack>
-    </Td>
+      </Td>
 
-    {/* Gender */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme="purple" 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.gender || 'N/A'}
-      </Badge>
-    </Td>
+      {/* Platforms */}
+      <Td px={3} py={3}>
+        <HStack spacing={1}>
+          {kol.instagram && (
+            <Tooltip label="Instagram" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.instagram)}
+                bg="pink.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'pink.100' }}
+              >
+                <Instagram size={14} color="#E4405F" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.tiktok && (
+            <Tooltip label="TikTok" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.tiktok)}
+                bg="gray.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'gray.100' }}
+              >
+                <Text fontSize="xs">🎵</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.facebook && (
+            <Tooltip label="Facebook" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.facebook)}
+                bg="blue.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'blue.100' }}
+              >
+                <Facebook size={14} color="#1877F2" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.twitter && (
+            <Tooltip label="Twitter" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.twitter)}
+                bg="blue.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'blue.100' }}
+              >
+                <Twitter size={14} color="#1DA1F2" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.thread && (
+            <Tooltip label="Threads" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.thread)}
+                bg="purple.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'purple.100' }}
+              >
+                <Text fontSize="xs">🧵</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.blog && (
+            <Tooltip label="Blog" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.blog)}
+                bg="orange.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'orange.100' }}
+              >
+                <FileText size={14} color="#F97316" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.youtube && (
+            <Tooltip label="YouTube" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.youtube)}
+                bg="red.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'red.100' }}
+              >
+                <Text fontSize="xs">▶️</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.xhs && (
+            <Tooltip label="XHS" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.xhs)}
+                bg="red.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'red.100' }}
+              >
+                <Text fontSize="xs">📕</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.lemon8 && (
+            <Tooltip label="Lemon8" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.lemon8)}
+                bg="yellow.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'yellow.100' }}
+              >
+                <Text fontSize="xs">🍋</Text>
+              </Box>
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
 
-    {/* Niche */}
-    <Td px={6} py={5} minW="180px">
-      <VStack align="start" spacing={2}>
-        {kol.niches && kol.niches.length > 0 ? (
-          <>
-            {kol.niches.map(niche => (
-              <Badge 
-                key={niche} 
-                colorScheme="red" 
-                variant="outline" 
-                size="sm"
-                borderRadius="full"
-                fontWeight="700"
-                borderWidth="2px"
-                fontSize="sm"
-                px={3}
-                py={1}
-                wordBreak="break-word"
+      {/* Rate */}
+      <Td px={3} py={3} minW="100px">
+        <VStack align="start" spacing={0.5}>
+          {parseFloat(kol.rate) > 0 && (
+            <Tooltip label="General Rate" fontSize="xs">
+              <Text fontSize="sm" fontWeight="700" color="green.700">
+                RM{parseFloat(kol.rate).toLocaleString()}
+              </Text>
+            </Tooltip>
+          )}
+          {parseFloat(kol.instagramrate || kol.instagramRate) > 0 && (
+            <Text fontSize="xs" color="pink.600">
+              IG: RM{parseFloat(kol.instagramrate || kol.instagramRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.tiktokrate || kol.tiktokRate) > 0 && (
+            <Text fontSize="xs" color="gray.600">
+              TT: RM{parseFloat(kol.tiktokrate || kol.tiktokRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.facebookrate || kol.facebookRate) > 0 && (
+            <Text fontSize="xs" color="blue.600">
+              FB: RM{parseFloat(kol.facebookrate || kol.facebookRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.youtuberate || kol.youtubeRate) > 0 && (
+            <Text fontSize="xs" color="red.600">
+              YT: RM{parseFloat(kol.youtuberate || kol.youtubeRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.twitterrate || kol.twitterRate) > 0 && (
+            <Text fontSize="xs" color="blue.500">
+              X: RM{parseFloat(kol.twitterrate || kol.twitterRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.threadrate || kol.threadRate) > 0 && (
+            <Text fontSize="xs" color="purple.600">
+              TH: RM{parseFloat(kol.threadrate || kol.threadRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.blograte || kol.blogRate) > 0 && (
+            <Text fontSize="xs" color="orange.600">
+              Blog: RM{parseFloat(kol.blograte || kol.blogRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.xhsrate || kol.xhsRate) > 0 && (
+            <Text fontSize="xs" color="red.600">
+              XHS: RM{parseFloat(kol.xhsrate || kol.xhsRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.lemon8rate || kol.lemon8Rate) > 0 && (
+            <Text fontSize="xs" color="yellow.600">
+              L8: RM{parseFloat(kol.lemon8rate || kol.lemon8Rate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.sellingprice) > 0 && (
+            <Text fontSize="xs" color="purple.700" fontWeight="600">
+              Sell: RM{parseFloat(kol.sellingprice).toLocaleString()}
+            </Text>
+          )}
+          {!kol.rate && !kol.instagramrate && !kol.tiktokrate && !kol.facebookrate && !kol.youtuberate && (
+            <Text fontSize="xs" color="gray.400">N/A</Text>
+          )}
+        </VStack>
+      </Td>
+
+      {/* Rate Details */}
+      <Td px={3} py={3} minW="120px" maxW="150px">
+        <Text fontSize="xs" color="gray.600" noOfLines={2}>
+          {kol.rate_details || kol.rateDetails || '-'}
+        </Text>
+      </Td>
+
+      {/* Tier */}
+      <Td px={3} py={3}>
+        <Badge
+          colorScheme={getTierColor(kol.tier)}
+          variant="subtle"
+          fontSize="xs"
+          px={2}
+          py={1}
+          borderRadius="md"
+        >
+          {kol.tier || 'N/A'}
+        </Badge>
+      </Td>
+
+      {/* Gender */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.gender || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Race */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.race || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Hair Style */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.hair_style || kol.hairStyle || kol.hijabStatus || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Location */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700" noOfLines={1}>
+          {kol.address || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Niches */}
+      <Td px={3} py={3} minW="150px" maxW="180px">
+        <HStack spacing={1} flexWrap="wrap">
+          {kol.niches && kol.niches.length > 0 ? (
+            (Array.isArray(kol.niches) ? kol.niches : []).slice(0, 2).map((niche, idx) => (
+              <Badge
+                key={idx}
+                colorScheme="red"
+                variant="outline"
+                fontSize="2xs"
+                px={1.5}
+                py={0.5}
+                borderRadius="sm"
               >
                 {niche}
               </Badge>
-            ))}
-          </>
-        ) : (
-          <Text fontSize="sm" color="gray.400" fontStyle="italic">
-            No niches
-          </Text>
-        )}
-      </VStack>
-    </Td>
+            ))
+          ) : (
+            <Text fontSize="xs" color="gray.400">-</Text>
+          )}
+          {kol.niches && Array.isArray(kol.niches) && kol.niches.length > 2 && (
+            <Tooltip label={kol.niches.slice(2).join(', ')} fontSize="xs">
+              <Badge colorScheme="gray" variant="subtle" fontSize="2xs" px={1.5} py={0.5}>
+                +{kol.niches.length - 2}
+              </Badge>
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
 
-    {/* Hijab/Free Hair */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme="teal" 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.hairStyle || kol.hijabStatus || 'N/A'}
-      </Badge>
-    </Td>
-
-    {/* Race */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme="blue" 
-        variant="subtle"
-        borderRadius="full"
-        px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
-      >
-        {kol.race || 'N/A'}
-      </Badge>
-    </Td>
-
-    {/* Address */}
-    <Td px={6} py={5} minW="120px">
-      <Text fontSize="sm" fontWeight="600" color="gray.700" wordBreak="break-word">
-        {kol.address || 'N/A'}
-      </Text>
-    </Td>
-
-    {/* Contact */}
-    <Td px={3} py={3} minW="120px">
-      <Text fontSize="xs" fontFamily="mono" color="gray.700" noOfLines={1}>
-        {kol.contact_number || kol.contactNumber || 'N/A'}
-      </Text>
-    </Td>
-
-    {/* Date */}
-    <Td px={6} py={5}>
-      <HStack spacing={2}>
-        <Calendar size={14} color="#666" />
-        <Text fontSize="sm" fontWeight="600" noOfLines={1} color="gray.700">
-          {formatDate(kol.submission_date || kol.dateAdded || kol.createdAt)}
+      {/* Rating */}
+      <Td px={3} py={3}>
+        <Text fontSize="sm" color="yellow.500">
+          {kol.rating > 0 ? '⭐'.repeat(kol.rating) : '-'}
         </Text>
-      </HStack>
-    </Td>
+      </Td>
 
-    {/* Rate Details */}
-    <Td px={6} py={5} minW="200px">
-      <Text 
-        fontSize="sm" 
-        color="gray.600" 
-        fontWeight="600" 
-        wordBreak="break-word"
-        whiteSpace="pre-wrap"
-      >
-        {kol.rateDetails || 'No details'}
-      </Text>
-    </Td>
+      {/* PIC */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.picusername || kol.picUserName || kol.pic || 'N/A'}
+        </Text>
+      </Td>
 
-    {/* PIC */}
-    <Td px={6} py={5}>
-      <Badge 
-        colorScheme="green" 
-        variant="subtle"
-        borderRadius="full"
+      {/* Date Added */}
+      <Td px={3} py={3}>
+        <VStack align="start" spacing={0.5}>
+          <Text fontSize="xs" color="gray.600">
+            {formatDate(kol.submission_date || kol.created_at || kol.createdAt)}
+          </Text>
+          {kol.rate_updated_at && (
+            <Tooltip label="Rate last updated" fontSize="xs">
+              <Text fontSize="2xs" color="red.500">
+                {formatDate(kol.rate_updated_at)}
+              </Text>
+            </Tooltip>
+          )}
+        </VStack>
+      </Td>
+
+      {/* Actions - Sticky Right */}
+      <Td
         px={3}
-        py={2}
-        fontWeight="700"
-        fontSize="sm"
-        noOfLines={1}
+        py={3}
+        position="sticky"
+        right={0}
+        bg={isSelected ? 'blue.50' : 'white'}
+        boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
+        borderLeft="1px solid"
+        borderColor="gray.200"
+        _hover={{ bg: isSelected ? 'blue.50' : 'gray.50' }}
       >
-        {kol.pic || 'N/A'}
-      </Badge>
-    </Td>
-
-    {/* Actions - Sticky Right */}
-    <Td 
-      px={3} 
-      py={3} 
-      position="sticky" 
-      right={0} 
-      bg={isSelected ? 'blue.50' : 'white'}
-      boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
-      borderLeft="1px solid"
-      borderColor="gray.200"
-      _hover={{ bg: isSelected ? 'blue.50' : 'gray.50' }}
-    >
-      <HStack spacing={1}>
-        <Tooltip label="View Details" fontSize="xs">
-          <IconButton
-            size="sm"
-            icon={<Eye size={14} />}
-            onClick={() => onView(kol)}
-            colorScheme="blue"
-            variant="ghost"
-            aria-label="View"
-          />
-        </Tooltip>
-        {canEdit && (
-          <Tooltip label="Edit" fontSize="xs">
+        <HStack spacing={1}>
+          <Tooltip label="View Details" fontSize="xs">
             <IconButton
               size="sm"
-              icon={<Edit size={14} />}
-              onClick={() => onEdit(kol)}
-              colorScheme="green"
+              icon={<Eye size={14} />}
+              onClick={() => onView(kol)}
+              colorScheme="blue"
               variant="ghost"
-              aria-label="Edit"
+              aria-label="View"
             />
           </Tooltip>
-        )}
-        {canDelete && (
-          <Tooltip label="Delete" fontSize="xs">
-            <IconButton
-              size="sm"
-              icon={<Trash2 size={14} />}
-              onClick={() => onDelete(kol.id)}
-              colorScheme="red"
-              variant="ghost"
-              aria-label="Delete"
-            />
-          </Tooltip>
-        )}
-      </HStack>
-    </Td>
-  </Tr>
+          {canEdit && (
+            <Tooltip label="Edit" fontSize="xs">
+              <IconButton
+                size="sm"
+                icon={<Edit size={14} />}
+                onClick={() => onEdit(kol)}
+                colorScheme="green"
+                variant="ghost"
+                aria-label="Edit"
+              />
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip label="Delete" fontSize="xs">
+              <IconButton
+                size="sm"
+                icon={<Trash2 size={14} />}
+                onClick={() => onDelete(kol.id)}
+                colorScheme="red"
+                variant="ghost"
+                aria-label="Delete"
+              />
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
+    </Tr>
   );
 });
 
@@ -1252,23 +1291,23 @@ const TwitterThreadKOL = () => {
                       />
                     </Th>
                     <Th px={3}>Name</Th>
+                    <Th px={3}>Contact</Th>
                     <Th px={3}>Platforms</Th>
                     <Th px={3}>Rates (RM)</Th>
-                    <Th px={3}>Tier</Th>
-                    <Th px={3}>Rating</Th>
-                    <Th px={3}>Gender</Th>
-                    <Th px={3}>Niche</Th>
-                    <Th px={3}>Hair</Th>
-                    <Th px={3}>Race</Th>
-                    <Th px={3}>Location</Th>
-                    <Th px={3}>Contact</Th>
-                    <Th px={3}>Date</Th>
                     <Th px={3}>Rate Details</Th>
+                    <Th px={3}>Tier</Th>
+                    <Th px={3}>Gender</Th>
+                    <Th px={3}>Race</Th>
+                    <Th px={3}>Hair</Th>
+                    <Th px={3}>Location</Th>
+                    <Th px={3}>Niches</Th>
+                    <Th px={3}>Rating</Th>
                     <Th px={3}>PIC</Th>
-                    <Th 
-                      position="sticky" 
-                      right={0} 
-                      bg="gray.100" 
+                    <Th px={3}>Date</Th>
+                    <Th
+                      position="sticky"
+                      right={0}
+                      bg="gray.100"
                       px={3}
                       boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
                     >

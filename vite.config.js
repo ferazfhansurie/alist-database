@@ -31,9 +31,9 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://alist.jutateknologi.com',
+        target: 'http://localhost:3001',
         changeOrigin: true,
-        secure: true
+        secure: false
       }
     }
   }

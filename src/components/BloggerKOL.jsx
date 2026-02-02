@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -38,11 +39,12 @@ import {
   WrapItem
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  Search,
+  Edit,
+  Edit2,
+  Trash2,
+  Eye,
   Target,
   FileText,
   ExternalLink,
@@ -51,7 +53,8 @@ import {
   MapPin,
   Instagram,
   Facebook,
-  Twitter
+  Twitter,
+  DollarSign
 } from 'lucide-react';
 import { KOL_TYPES, TIERS, NICHES, STATES } from '../data/models';
 import KOLForm from './KOLForm';
@@ -59,6 +62,419 @@ import { useDatabase } from '../contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const MotionBox = motion(Box);
+
+// Memoized table row component for performance
+const KOLTableRow = memo(({
+  kol,
+  onEdit,
+  onView,
+  onDelete,
+  onOpenLink,
+  getTierColor,
+  formatDate,
+  canEdit,
+  canDelete,
+  isSelected,
+  onSelect
+}) => {
+  return (
+    <Tr
+      _hover={{ bg: 'gray.50' }}
+      bg={isSelected ? 'blue.50' : 'white'}
+      borderBottom="1px solid"
+      borderColor="gray.200"
+      transition="all 0.15s ease"
+    >
+      {/* Checkbox */}
+      <Td px={3} py={3} w="40px">
+        <Checkbox
+          isChecked={isSelected}
+          onChange={(e) => onSelect(kol.id, e.target.checked)}
+          colorScheme="blue"
+          size="lg"
+        />
+      </Td>
+
+      {/* Name */}
+      <Td px={3} py={3} minW="150px" maxW="200px">
+        <VStack align="start" spacing={1}>
+          <Text fontWeight="600" color="gray.900" fontSize="sm" noOfLines={1}>
+            {kol.name || 'No Name'}
+          </Text>
+          {kol.notes && (
+            <Text fontSize="xs" color="blue.600" noOfLines={1} fontWeight="500">
+              {kol.notes}
+            </Text>
+          )}
+        </VStack>
+      </Td>
+
+      {/* Contact */}
+      <Td px={3} py={3} minW="120px">
+        <Text fontSize="xs" fontFamily="mono" color="gray.700" noOfLines={1}>
+          {kol.contact_number || kol.contactNumber || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Platforms */}
+      <Td px={3} py={3}>
+        <HStack spacing={1}>
+          {kol.instagram && (
+            <Tooltip label="Instagram" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.instagram)}
+                bg="pink.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'pink.100' }}
+              >
+                <Instagram size={14} color="#E4405F" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.tiktok && (
+            <Tooltip label="TikTok" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.tiktok)}
+                bg="gray.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'gray.100' }}
+              >
+                <Text fontSize="xs">🎵</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.facebook && (
+            <Tooltip label="Facebook" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.facebook)}
+                bg="blue.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'blue.100' }}
+              >
+                <Facebook size={14} color="#1877F2" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.twitter && (
+            <Tooltip label="Twitter" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.twitter)}
+                bg="blue.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'blue.100' }}
+              >
+                <Twitter size={14} color="#1DA1F2" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.thread && (
+            <Tooltip label="Threads" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.thread)}
+                bg="purple.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'purple.100' }}
+              >
+                <Text fontSize="xs">🧵</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.blog && (
+            <Tooltip label="Blog" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.blog)}
+                bg="orange.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'orange.100' }}
+              >
+                <FileText size={14} color="#F97316" />
+              </Box>
+            </Tooltip>
+          )}
+          {kol.youtube && (
+            <Tooltip label="YouTube" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.youtube)}
+                bg="red.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'red.100' }}
+              >
+                <Text fontSize="xs">▶️</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.xhs && (
+            <Tooltip label="XHS" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.xhs)}
+                bg="red.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'red.100' }}
+              >
+                <Text fontSize="xs">📕</Text>
+              </Box>
+            </Tooltip>
+          )}
+          {kol.lemon8 && (
+            <Tooltip label="Lemon8" fontSize="xs">
+              <Box
+                as="button"
+                onClick={() => onOpenLink(kol.lemon8)}
+                bg="yellow.50"
+                p={1.5}
+                borderRadius="md"
+                _hover={{ bg: 'yellow.100' }}
+              >
+                <Text fontSize="xs">🍋</Text>
+              </Box>
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
+
+      {/* Rate */}
+      <Td px={3} py={3} minW="100px">
+        <VStack align="start" spacing={0.5}>
+          {parseFloat(kol.rate) > 0 && (
+            <Tooltip label="General Rate" fontSize="xs">
+              <Text fontSize="sm" fontWeight="700" color="green.700">
+                RM{parseFloat(kol.rate).toLocaleString()}
+              </Text>
+            </Tooltip>
+          )}
+          {parseFloat(kol.instagramrate || kol.instagramRate) > 0 && (
+            <Text fontSize="xs" color="pink.600">
+              IG: RM{parseFloat(kol.instagramrate || kol.instagramRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.tiktokrate || kol.tiktokRate) > 0 && (
+            <Text fontSize="xs" color="gray.600">
+              TT: RM{parseFloat(kol.tiktokrate || kol.tiktokRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.facebookrate || kol.facebookRate) > 0 && (
+            <Text fontSize="xs" color="blue.600">
+              FB: RM{parseFloat(kol.facebookrate || kol.facebookRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.youtuberate || kol.youtubeRate) > 0 && (
+            <Text fontSize="xs" color="red.600">
+              YT: RM{parseFloat(kol.youtuberate || kol.youtubeRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.twitterrate || kol.twitterRate) > 0 && (
+            <Text fontSize="xs" color="blue.500">
+              X: RM{parseFloat(kol.twitterrate || kol.twitterRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.threadrate || kol.threadRate) > 0 && (
+            <Text fontSize="xs" color="purple.600">
+              TH: RM{parseFloat(kol.threadrate || kol.threadRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.blograte || kol.blogRate) > 0 && (
+            <Text fontSize="xs" color="orange.600">
+              Blog: RM{parseFloat(kol.blograte || kol.blogRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.xhsrate || kol.xhsRate) > 0 && (
+            <Text fontSize="xs" color="red.600">
+              XHS: RM{parseFloat(kol.xhsrate || kol.xhsRate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.lemon8rate || kol.lemon8Rate) > 0 && (
+            <Text fontSize="xs" color="yellow.600">
+              L8: RM{parseFloat(kol.lemon8rate || kol.lemon8Rate).toLocaleString()}
+            </Text>
+          )}
+          {parseFloat(kol.sellingprice) > 0 && (
+            <Text fontSize="xs" color="purple.700" fontWeight="600">
+              Sell: RM{parseFloat(kol.sellingprice).toLocaleString()}
+            </Text>
+          )}
+          {!kol.rate && !kol.instagramrate && !kol.tiktokrate && !kol.facebookrate && !kol.youtuberate && (
+            <Text fontSize="xs" color="gray.400">N/A</Text>
+          )}
+        </VStack>
+      </Td>
+
+      {/* Rate Details */}
+      <Td px={3} py={3} minW="120px" maxW="150px">
+        <Text fontSize="xs" color="gray.600" noOfLines={2}>
+          {kol.rate_details || kol.rateDetails || '-'}
+        </Text>
+      </Td>
+
+      {/* Tier */}
+      <Td px={3} py={3}>
+        <Badge
+          colorScheme={getTierColor(kol.tier)}
+          variant="subtle"
+          fontSize="xs"
+          px={2}
+          py={1}
+          borderRadius="md"
+        >
+          {kol.tier || 'N/A'}
+        </Badge>
+      </Td>
+
+      {/* Gender */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.gender || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Race */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.race || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Hair Style */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.hair_style || kol.hairStyle || kol.hijabStatus || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Location */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700" noOfLines={1}>
+          {kol.address || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Niches */}
+      <Td px={3} py={3} minW="150px" maxW="180px">
+        <HStack spacing={1} flexWrap="wrap">
+          {kol.niches && kol.niches.length > 0 ? (
+            (Array.isArray(kol.niches) ? kol.niches : []).slice(0, 2).map((niche, idx) => (
+              <Badge
+                key={idx}
+                colorScheme="red"
+                variant="outline"
+                fontSize="2xs"
+                px={1.5}
+                py={0.5}
+                borderRadius="sm"
+              >
+                {niche}
+              </Badge>
+            ))
+          ) : (
+            <Text fontSize="xs" color="gray.400">-</Text>
+          )}
+          {kol.niches && Array.isArray(kol.niches) && kol.niches.length > 2 && (
+            <Tooltip label={kol.niches.slice(2).join(', ')} fontSize="xs">
+              <Badge colorScheme="gray" variant="subtle" fontSize="2xs" px={1.5} py={0.5}>
+                +{kol.niches.length - 2}
+              </Badge>
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
+
+      {/* Rating */}
+      <Td px={3} py={3}>
+        <Text fontSize="sm" color="yellow.500">
+          {kol.rating > 0 ? '⭐'.repeat(kol.rating) : '-'}
+        </Text>
+      </Td>
+
+      {/* PIC */}
+      <Td px={3} py={3}>
+        <Text fontSize="xs" color="gray.700">
+          {kol.picusername || kol.picUserName || kol.pic || 'N/A'}
+        </Text>
+      </Td>
+
+      {/* Date Added */}
+      <Td px={3} py={3}>
+        <VStack align="start" spacing={0.5}>
+          <Text fontSize="xs" color="gray.600">
+            {formatDate(kol.submission_date || kol.created_at || kol.createdAt)}
+          </Text>
+          {kol.rate_updated_at && (
+            <Tooltip label="Rate last updated" fontSize="xs">
+              <Text fontSize="2xs" color="red.500">
+                {formatDate(kol.rate_updated_at)}
+              </Text>
+            </Tooltip>
+          )}
+        </VStack>
+      </Td>
+
+      {/* Actions - Sticky Right */}
+      <Td
+        px={3}
+        py={3}
+        position="sticky"
+        right={0}
+        bg={isSelected ? 'blue.50' : 'white'}
+        boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
+        borderLeft="1px solid"
+        borderColor="gray.200"
+        _hover={{ bg: isSelected ? 'blue.50' : 'gray.50' }}
+      >
+        <HStack spacing={1}>
+          <Tooltip label="View Details" fontSize="xs">
+            <IconButton
+              size="sm"
+              icon={<Eye size={14} />}
+              onClick={() => onView(kol)}
+              colorScheme="blue"
+              variant="ghost"
+              aria-label="View"
+            />
+          </Tooltip>
+          {canEdit && (
+            <Tooltip label="Edit" fontSize="xs">
+              <IconButton
+                size="sm"
+                icon={<Edit size={14} />}
+                onClick={() => onEdit(kol)}
+                colorScheme="green"
+                variant="ghost"
+                aria-label="Edit"
+              />
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip label="Delete" fontSize="xs">
+              <IconButton
+                size="sm"
+                icon={<Trash2 size={14} />}
+                onClick={() => onDelete(kol.id)}
+                colorScheme="red"
+                variant="ghost"
+                aria-label="Delete"
+              />
+            </Tooltip>
+          )}
+        </HStack>
+      </Td>
+    </Tr>
+  );
+});
 
 const BloggerKOL = () => {
   const { loadKOLsByType, createKOL, updateKOL, deleteKOL } = useDatabase();
@@ -270,10 +686,21 @@ const BloggerKOL = () => {
   };
 
   const getTierColor = (tier) => {
+    if (!tier) return 'gray';
     if (tier.includes('Premium')) return 'red';
     if (tier.includes('Mid-tier')) return 'orange';
     if (tier.includes('Emerging')) return 'yellow';
     return 'gray';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-MY', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   // Bulk selection handlers
@@ -747,46 +1174,39 @@ const BloggerKOL = () => {
               borderColor="gray.100"
               overflow="hidden"
             >
-              <Box 
-                overflowX="auto" 
-                overflowY="auto"
-                height="calc(100vh - 420px)"
-                position="relative"
-              >
+              <Box overflowX="auto" overflowY="auto" flex="1">
                 <Table variant="simple" size="sm">
-                  <Thead position="sticky" top={0} bg="rgba(220, 38, 38, 0.15)" zIndex={2} borderBottom="2px solid" borderColor="rgba(220, 38, 38, 0.3)">
+                  <Thead position="sticky" top={0} bg="gray.100" zIndex={2}>
                     <Tr>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" w="40px">
-                        <Tooltip label="Select All" fontSize="xs">
-                          <Checkbox
-                            isChecked={selectedKOLs.size === filteredData.length && filteredData.length > 0}
-                            isIndeterminate={selectedKOLs.size > 0 && selectedKOLs.size < filteredData.length}
-                            onChange={(e) => handleSelectAll(e.target.checked)}
-                            colorScheme="red"
-                          />
-                        </Tooltip>
+                      <Th w="40px" px={3}>
+                        <Checkbox
+                          isChecked={filteredData.length > 0 && selectedKOLs.size === filteredData.length}
+                          isIndeterminate={selectedKOLs.size > 0 && selectedKOLs.size < filteredData.length}
+                          onChange={(e) => handleSelectAll(e.target.checked)}
+                          colorScheme="blue"
+                          size="lg"
+                        />
                       </Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="180px">Name</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="140px">Blog URL</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="200px">Rates (RM)</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="90px">Tier</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="70px">Rating</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="130px">Niches</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="100px">Location</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="120px">Contact</Th>
-                      <Th px={3} py={3} fontSize="xs" fontWeight="bold" color="red.700" minW="80px">PIC</Th>
-                      <Th 
-                        px={3} 
-                        py={3} 
-                        fontSize="xs" 
-                        fontWeight="bold" 
-                        color="red.700" 
-                        w="120px"
+                      <Th px={3}>Name</Th>
+                      <Th px={3}>Contact</Th>
+                      <Th px={3}>Platforms</Th>
+                      <Th px={3}>Rates (RM)</Th>
+                      <Th px={3}>Rate Details</Th>
+                      <Th px={3}>Tier</Th>
+                      <Th px={3}>Gender</Th>
+                      <Th px={3}>Race</Th>
+                      <Th px={3}>Hair</Th>
+                      <Th px={3}>Location</Th>
+                      <Th px={3}>Niches</Th>
+                      <Th px={3}>Rating</Th>
+                      <Th px={3}>PIC</Th>
+                      <Th px={3}>Date</Th>
+                      <Th
                         position="sticky"
                         right={0}
-                        bg="rgba(220, 38, 38, 0.15)"
+                        bg="gray.100"
+                        px={3}
                         boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
-                        zIndex={3}
                       >
                         Actions
                       </Th>
@@ -795,161 +1215,32 @@ const BloggerKOL = () => {
                   <Tbody>
                     {filteredData.length === 0 ? (
                       <Tr>
-                        <Td colSpan={11} textAlign="center" py={10}>
+                        <Td colSpan={16} py={20}>
                           <Center>
-                            <VStack spacing={2}>
-                              <Spinner color="red.500" />
-                              <Text color="gray.500" fontSize="sm">No KOLs found</Text>
+                            <VStack spacing={3}>
+                              <Spinner size="xl" color="blue.500" thickness="3px" />
+                              <Text color="gray.600">Loading KOLs...</Text>
                             </VStack>
                           </Center>
                         </Td>
                       </Tr>
                     ) : (
-                      filteredData.map((kol) => {
-                        const isSelected = selectedKOLs.has(kol.id);
-                        return (
-                          <Tr 
-                            key={kol.id}
-                            bg={isSelected ? 'red.50' : 'white'}
-                            _hover={{ bg: isSelected ? 'red.100' : 'rgba(254, 226, 226, 0.4)' }}
-                            fontSize="xs"
-                            borderBottom="1px solid"
-                            borderColor="rgba(220, 38, 38, 0.15)"
-                            transition="all 0.15s ease"
-                          >
-                            <Td px={3} py={3}>
-                              <Checkbox
-                                isChecked={isSelected}
-                                onChange={(e) => handleSelectKOL(kol.id, e.target.checked)}
-                                colorScheme="red"
-                              />
-                            </Td>
-                            <Td px={3} py={3}>
-                              <VStack align="start" spacing={1}>
-                                <Text fontWeight="600" color="gray.800" fontSize="xs" noOfLines={1}>
-                                  {kol.name}
-                                </Text>
-                                <Text fontSize="2xs" color="gray.500" noOfLines={1}>
-                                  {kol.gender} • {kol.race}
-                                </Text>
-                              </VStack>
-                            </Td>
-                            <Td px={3} py={3}>
-                              {kol.blog && (
-                                <HStack 
-                                  spacing={1} 
-                                  cursor="pointer"
-                                  onClick={() => openLink(kol.blog)}
-                                  _hover={{ color: 'blue.600' }}
-                                >
-                                  <FileText size={12} color="#FF6B35" />
-                                  <Text fontSize="2xs" color="blue.500" fontWeight="500" noOfLines={1}>
-                                    Visit
-                                  </Text>
-                                  <ExternalLink size={10} color="#666" />
-                                </HStack>
-                              )}
-                            </Td>
-                            <Td px={3} py={3}>
-                              <VStack align="start" spacing={0.5}>
-                                <Text fontWeight="700" color="red.600" fontSize="xs">
-                                  Overall: {kol.rate?.toLocaleString() || '0'}
-                                </Text>
-                                {parseFloat(kol.instagramRate || kol.instagram_rate) > 0 && (
-                                  <Text fontSize="2xs" color="gray.600">
-                                    📸 {parseFloat(kol.instagramRate || kol.instagram_rate).toLocaleString()}
-                                  </Text>
-                                )}
-                                {parseFloat(kol.tiktokRate || kol.tiktok_rate) > 0 && (
-                                  <Text fontSize="2xs" color="gray.600">
-                                    🎵 {parseFloat(kol.tiktokRate || kol.tiktok_rate).toLocaleString()}
-                                  </Text>
-                                )}
-                                {parseFloat(kol.blogRate || kol.blog_rate) > 0 && (
-                                  <Text fontSize="2xs" color="gray.600">
-                                    📝 {parseFloat(kol.blogRate || kol.blog_rate).toLocaleString()}
-                                  </Text>
-                                )}
-                              </VStack>
-                            </Td>
-                            <Td px={3} py={3}>
-                              <Badge 
-                                colorScheme={getTierColor(kol.tier)}
-                                fontSize="2xs"
-                                borderRadius="md"
-                                px={2}
-                                py={0.5}
-                              >
-                                {kol.tier}
-                              </Badge>
-                            </Td>
-                            <Td px={3} py={3}>
-                              <HStack spacing={1}>
-                                <Text fontSize="xs" fontWeight="600" color="yellow.500">★</Text>
-                                <Text fontSize="xs" fontWeight="600">{kol.rating || 'N/A'}</Text>
-                              </HStack>
-                            </Td>
-                            <Td px={3} py={3}>
-                              <Wrap spacing={1}>
-                                {(kol.niches || kol.niche)?.split(',').slice(0, 2).map((niche, idx) => (
-                                  <WrapItem key={idx}>
-                                    <Badge fontSize="2xs" colorScheme="purple" borderRadius="md" px={1.5}>
-                                      {niche.trim()}
-                                    </Badge>
-                                  </WrapItem>
-                                ))}
-                                {(kol.niches || kol.niche)?.split(',').length > 2 && (
-                                  <WrapItem>
-                                    <Text fontSize="2xs" color="gray.500">+{(kol.niches || kol.niche).split(',').length - 2}</Text>
-                                  </WrapItem>
-                                )}
-                              </Wrap>
-                            </Td>
-                            <Td px={3} py={3}>
-                              <Text fontSize="xs" noOfLines={1}>{kol.state || kol.location}</Text>
-                            </Td>
-                            <Td px={3} py={3}>
-                              <VStack align="start" spacing={0.5}>
-                                <Text fontSize="2xs" fontWeight="500" noOfLines={1}>{kol.contact_number || kol.contactNumber}</Text>
-                                <Text fontSize="2xs" color="blue.500" noOfLines={1}>{kol.email}</Text>
-                              </VStack>
-                            </Td>
-                            <Td px={3} py={3}>
-                              <Text fontSize="xs" fontWeight="500">{kol.pic}</Text>
-                            </Td>
-                            <Td 
-                              px={3} 
-                              py={3}
-                              position="sticky"
-                              right={0}
-                              bg={isSelected ? 'red.50' : 'white'}
-                              boxShadow="-4px 0 8px rgba(0,0,0,0.05)"
-                              _hover={{ bg: isSelected ? 'red.100' : 'rgba(254, 226, 226, 0.4)' }}
-                            >
-                              <HStack spacing={1}>
-                                <IconButton
-                                  size="xs"
-                                  icon={<Edit2 size={12} />}
-                                  onClick={() => handleEdit(kol)}
-                                  colorScheme="blue"
-                                  variant="ghost"
-                                  aria-label="Edit KOL"
-                                />
-                                {canDelete() && (
-                                  <IconButton
-                                    size="xs"
-                                    icon={<Trash2 size={12} />}
-                                    onClick={() => handleDelete(kol.id)}
-                                    colorScheme="red"
-                                    variant="ghost"
-                                    aria-label="Delete KOL"
-                                  />
-                                )}
-                              </HStack>
-                            </Td>
-                          </Tr>
-                        );
-                      })
+                      filteredData.map((kol) => (
+                        <KOLTableRow
+                          key={kol.id}
+                          kol={kol}
+                          onEdit={handleEdit}
+                          onView={handleView}
+                          onDelete={handleDelete}
+                          onOpenLink={openLink}
+                          getTierColor={getTierColor}
+                          formatDate={formatDate}
+                          canEdit={canEdit()}
+                          canDelete={canDelete()}
+                          isSelected={selectedKOLs.has(kol.id)}
+                          onSelect={handleSelectKOL}
+                        />
+                      ))
                     )}
                   </Tbody>
                 </Table>

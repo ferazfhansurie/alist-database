@@ -99,6 +99,90 @@ body {
   box-shadow: 0 4px 15px rgba(220, 38, 38, 0.1);
 }
 
+/* Search animations and effects */
+@keyframes search-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes search-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8));
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.search-focused {
+  animation: search-pulse 2s ease-in-out infinite;
+}
+
+.search-result-item {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Smooth scrollbar for search results */
+.search-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-results::-webkit-scrollbar-track {
+  background: #f7fafc;
+  border-radius: 10px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+  background: #ef4444;
+}
+
+/* Highlight text animation */
+@keyframes highlight {
+  0% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(254, 226, 226, 0.8);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.text-highlight {
+  animation: highlight 1.5s ease-in-out;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

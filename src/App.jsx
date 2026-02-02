@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ChakraProvider, Box } from '@chakra-ui/react';
 import Navigation from "./components/Navigation";
 import Dashboard from "./components/Dashboard";
+import Analytics from "./components/Analytics";
 import SocialMediaKOL from "./components/SocialMediaKOL";
 import TwitterThreadKOL from "./components/TwitterThreadKOL";
 import BloggerKOL from "./components/BloggerKOL";
@@ -27,6 +28,14 @@ function App() {
                   <Box bg="white" minH="100vh">
                     <Navigation />
                     <Dashboard />
+                  </Box>
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <Box bg="white" minH="100vh">
+                    <Navigation />
+                    <Analytics />
                   </Box>
                 </ProtectedRoute>
               } />

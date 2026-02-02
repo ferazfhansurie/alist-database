@@ -36,17 +36,18 @@ import {
   Divider
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { 
-  Home, 
-  Instagram, 
-  Twitter, 
-  FileText, 
+import {
+  Home,
+  Instagram,
+  Twitter,
+  FileText,
   Users,
   Plus,
   LogOut,
   User,
   Settings,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  BarChart3
 } from 'lucide-react';
 import logoImage from "../assets/logo.png";
 import KOLForm from './KOLForm';
@@ -82,7 +83,6 @@ const Navigation = () => {
     { path: '/twitter-thread', label: 'Twitter/Thread KOL', icon: Twitter, shortLabel: 'Twitter' },
     { path: '/blogger', label: 'Blogspot/Bloggers', icon: FileText, shortLabel: 'Blog' },
     { path: '/production-talent', label: 'Production Talent', icon: Users, shortLabel: 'Talent' },
-
   ];
 
   const kolTypeOptions = [

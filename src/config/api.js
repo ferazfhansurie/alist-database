@@ -1,11 +1,8 @@
 // API Configuration
-// For development with Vite proxy, use relative URLs
-// For production, use the full API URL from environment variable
+// For Vercel deployment, both frontend and API are on the same domain
+// so relative URLs work in both development and production
 
-const isDevelopment = import.meta.env.MODE === 'development';
-const API_BASE_URL = isDevelopment
-  ? '' // Use Vite proxy in development (relative URLs)
-  : (import.meta.env.VITE_API_URL || 'https://alist.jutateknologi.com');
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export const API_URL = API_BASE_URL;
 

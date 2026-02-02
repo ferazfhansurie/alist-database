@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -68,6 +69,7 @@ import KOLForm from './KOLForm';
 import ProposalModal from './ProposalModal';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiUrl } from '../config/api';
 
 // Memoized table row component to prevent unnecessary re-renders
 const KOLTableRow = memo(({
@@ -81,15 +83,18 @@ const KOLTableRow = memo(({
   canEdit,
   canDelete,
   isSelected,
-  onSelect
+  onSelect,
+  isHighlighted
 }) => {
   return (
     <Tr
+      id={`kol-row-${kol.id}`}
       _hover={{ bg: 'gray.50' }}
-      bg={isSelected ? 'blue.50' : 'white'}
+      bg={isHighlighted ? 'red.50' : isSelected ? 'blue.50' : 'white'}
       borderBottom="1px solid"
-      borderColor="gray.200"
-      transition="all 0.15s ease"
+      borderColor={isHighlighted ? 'red.300' : 'gray.200'}
+      transition="all 0.3s ease"
+      boxShadow={isHighlighted ? '0 0 0 2px rgba(239, 68, 68, 0.3)' : 'none'}
     >
       {/* Checkbox */}
       <Td px={3} py={3} w="40px">
@@ -483,9 +488,11 @@ const KOLTableRow = memo(({
 });
 
 const SocialMediaKOL = () => {
+  const location = useLocation();
   const { loadKOLs, loadKOLsByType, createKOL, updateKOL, deleteKOL } = useDatabase();
   const { canEdit, canDelete, canCopy } = useAuth();
   const [kolData, setKolData] = useState([]);
+  const [highlightedKolId, setHighlightedKolId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTier, setSelectedTier] = useState('All Tiers');
   const [selectedNiche, setSelectedNiche] = useState('All Niches');
@@ -517,6 +524,26 @@ const SocialMediaKOL = () => {
   const HIJAB_OPTIONS = ['Hijab', 'Free Hair'];
   const PICS = ['Amir', 'Tika', 'Aina'];
 
+  // Handle highlighting and scrolling to KOL from Dashboard navigation
+  useEffect(() => {
+    if (location.state?.highlightKolId) {
+      const kolId = location.state.highlightKolId;
+      setHighlightedKolId(kolId);
+      
+      // Scroll to the KOL after a short delay to ensure table is rendered
+      setTimeout(() => {
+        const element = document.getElementById(`kol-row-${kolId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+      
+      // Clear highlight after 3 seconds
+      setTimeout(() => {
+        setHighlightedKolId(null);
+      }, 3000);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     // Load all KOLs and filter for social media related ones
@@ -903,7 +930,7 @@ const SocialMediaKOL = () => {
     try {
       const kolIds = Array.from(selectedKOLs);
 
-      const response = await fetch('https://alist.jutateknologi.com/api/proposals/generate', {
+      const response = await fetch(getApiUrl('/api/proposals/generate'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1259,6 +1286,7 @@ const SocialMediaKOL = () => {
                         canDelete={canDelete()}
                         isSelected={selectedKOLs.has(kol.id)}
                         onSelect={handleSelectKOL}
+                        isHighlighted={highlightedKolId === kol.id}
                       />
                     ))
                   )}

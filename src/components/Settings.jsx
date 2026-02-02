@@ -55,6 +55,7 @@ import {
   SimpleGrid
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Upload,
@@ -69,7 +70,9 @@ import {
   Search,
   RefreshCw,
   Archive,
-  Sliders
+  Sliders,
+  BarChart3,
+  ArrowRight
 } from 'lucide-react';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -112,6 +115,10 @@ const Settings = () => {
 
   const { kols, createKOL, refreshData } = useDatabase();
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  // Check if current user can access Analytics (only azri@thealist.my)
+  const canAccessAnalytics = currentUser?.email === 'azri@thealist.my';
 
   const glassBg = useColorModeValue('rgba(255, 255, 255, 0.25)', 'rgba(26, 32, 44, 0.25)');
   const glassBorder = useColorModeValue('rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.18)');
@@ -121,7 +128,7 @@ const Settings = () => {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch('https://alist.jutateknologi.com/api/users');
+      const response = await fetch(getApiUrl('/api/users'));
       
       if (!response.ok) {
         throw new Error('Failed to fetch users');
@@ -209,16 +216,17 @@ const Settings = () => {
   };
 
   // Helper function to determine KOL type based on available platforms
-  const determineKOLType = (instagram, tiktok, facebook, twitter, thread, blog) => {
-    const platforms = [instagram, tiktok, facebook, twitter, thread, blog].filter(p => p && p.trim() !== '');
-    
-    if (platforms.length === 0) return 'social-media';
+  const determineKOLType = (instagram, tiktok, facebook, twitter, thread, blog, blogRate = 0) => {
+    // If has blog link or blog rate, it's a blogger
+    if (blog && blog.trim() !== '') return 'blogger';
+    if (blogRate > 0) return 'blogger';
+
+    // Check other platforms
+    if (twitter || thread) return 'twitter-thread';
     if (instagram && tiktok) return 'social-media';
     if (tiktok && !instagram) return 'tiktok';
     if (instagram && !tiktok) return 'instagram';
-    if (twitter || thread) return 'twitter-thread';
-    if (blog) return 'blogger';
-    
+
     return 'social-media';
   };
 
@@ -296,7 +304,7 @@ const Settings = () => {
     }
 
     try {
-      const response = await fetch('https://alist.jutateknologi.com/api/users', {
+      const response = await fetch(getApiUrl('/api/users'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -337,7 +345,7 @@ const Settings = () => {
     if (!userToDelete) return;
 
     try {
-      const response = await fetch(`https://alist.jutateknologi.com/api/users/${userToDelete.id}`, {
+      const response = await fetch(getApiUrl(`/api/users/${userToDelete.id}`), {
         method: 'DELETE',
       });
 
@@ -501,13 +509,13 @@ const Settings = () => {
               contactNumber: kolData.contactNumber || kolData.contact_number || kolData.contact || kolData['Contact Number'] || '',
               rateDetails: kolData.rateDetails || kolData.rate_details || kolData['Date Rates & Details'] || '',
               pic: kolData.pic || kolData.PIC || 'Amir',
-              kolType: determineKOLType(instagramLink, tiktokLink, facebookLink, twitterLink, threadLink, blogLink),
+              kolType: determineKOLType(instagramLink, tiktokLink, facebookLink, twitterLink, threadLink, blogLink, blogRate),
               notes: kolData.notes || kolData.Notes || '',
               niches: niches
             };
 
             // Send to API
-            const response = await fetch('https://alist.jutateknologi.com/api/kols', {
+            const response = await fetch(getApiUrl('/api/kols'), {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -830,8 +838,49 @@ const Settings = () => {
       >
         {/* Header */}
         <VStack spacing={6} align="stretch">
-      
 
+          {/* Analytics Access Card - Only for azri@thealist.my */}
+          {canAccessAnalytics && (
+            <Card
+              bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+              border="none"
+              borderRadius="xl"
+              overflow="hidden"
+              boxShadow="0 10px 40px rgba(102, 126, 234, 0.3)"
+            >
+              <CardBody>
+                <Flex justify="space-between" align="center">
+                  <HStack spacing={4}>
+                    <Box
+                      bg="rgba(255,255,255,0.2)"
+                      p={3}
+                      borderRadius="xl"
+                    >
+                      <BarChart3 size={28} color="white" />
+                    </Box>
+                    <VStack align="start" spacing={0}>
+                      <Text color="white" fontWeight="700" fontSize="xl">
+                        Analytics Dashboard
+                      </Text>
+                      <Text color="whiteAlpha.800" fontSize="sm">
+                        View comprehensive KOL performance metrics and insights
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <Button
+                    rightIcon={<ArrowRight size={18} />}
+                    colorScheme="whiteAlpha"
+                    bg="rgba(255,255,255,0.2)"
+                    _hover={{ bg: 'rgba(255,255,255,0.3)' }}
+                    onClick={() => navigate('/analytics')}
+                    fontWeight="600"
+                  >
+                    Open Analytics
+                  </Button>
+                </Flex>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Main Content Tabs */}
           <Tabs index={activeTab} onChange={setActiveTab} variant="enclosed" colorScheme="red">
